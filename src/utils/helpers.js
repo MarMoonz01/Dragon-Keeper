@@ -37,9 +37,9 @@ export async function ai(messages, sys) {
         const r = await fetch("https://api.anthropic.com/v1/messages", {
             method: "POST", headers: {
                 "Content-Type": "application/json",
-                "x-api-key": key, // User provided key
-                "anthropic-version": "2023-06-01"
-                // Removed dangerous-allow-browser header per security best practice.
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+                "anthropic-dangerous-direct-browser-access": "true" // Required for client-side calls. TODO: Use a backend proxy in production to avoid exposing API key.
             },
             body: JSON.stringify({
                 model: "claude-3-5-sonnet-20240620", max_tokens: 1000,

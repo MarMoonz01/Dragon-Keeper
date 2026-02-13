@@ -248,8 +248,6 @@ IMPROVE: [two bullet points]` }],
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
-        recognition.maxAlternatives = 1;
-
         recognitionRef.current = recognition;
         recognition.start();
         setIsRecording(true);

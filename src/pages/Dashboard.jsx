@@ -104,7 +104,7 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gc
                         </div>
                         <div className="sl">
                             {tasks.map(t => (
-                                <div key={t.id} className={"task" + (t.done ? " done" : "")} onClick={() => onComplete(t.id)}>
+                                <div key={t.id} className={"task" + (t.done ? " done" : "")} onClick={() => onComplete(t.id, t.xp)}>
                                     <div className={"chk" + (t.done ? " y" : "")}>{t.done ? "✓" : ""}</div>
                                     <div style={{ flex: 1 }}>
                                         <div className="tn">{t.name}</div>

@@ -3,27 +3,35 @@ import { load, save } from '../utils/helpers';
 
 export default function SettingsModal({ onClose, onReset }) {
     const [provider, setProvider] = useState("claude");
-    const [keys, setKeys] = useState({ claudeKey: "", openaiKey: "", geminiKey: "" });
+    const [keys, setKeys] = useState({ claudeKey: "", openaiKey: "", geminiKey: "", supabaseUrl: "", supabaseKey: "" });
+    const [initialSupabase, setInitialSupabase] = useState({ url: "", key: "" });
 
     useEffect(() => {
         load("nx-settings").then(s => {
             if (s) {
                 setProvider(s.provider || "claude");
-                setKeys({
+                const k = {
                     claudeKey: s.claudeKey || "",
                     openaiKey: s.openaiKey || "",
                     geminiKey: s.geminiKey || "",
                     supabaseUrl: s.supabaseUrl || "",
                     supabaseKey: s.supabaseKey || ""
-                });
+                };
+                setKeys(k);
+                setInitialSupabase({ url: k.supabaseUrl, key: k.supabaseKey });
             }
         });
     }, []);
 
     const handleSave = () => {
         save("nx-settings", { provider, ...keys });
-        // Force reload to apply new settings/keys to Supabase client
-        window.location.reload();
+        // Only reload if Supabase credentials changed (client is created at module load)
+        const supabaseChanged = keys.supabaseUrl !== initialSupabase.url || keys.supabaseKey !== initialSupabase.key;
+        if (supabaseChanged) {
+            window.location.reload();
+        } else {
+            onClose();
+        }
     };
 
     return (
@@ -37,17 +45,17 @@ export default function SettingsModal({ onClose, onReset }) {
                 <div className="fr">
                     <label>AI Provider</label>
                     <select className="inp" value={provider} onChange={e => setProvider(e.target.value)}>
-                        <option value="claude">Anthropic (Claude 5 Opus - 2026)</option>
-                        <option value="openai">OpenAI (GPT-6 Turbo)</option>
-                        <option value="gemini">Google (Gemini 3.0 Ultra)</option>
+                        <option value="claude">Anthropic (Claude 3.5 Sonnet)</option>
+                        <option value="openai">OpenAI (GPT-4o)</option>
+                        <option value="gemini">Google (Gemini 1.5 Pro)</option>
                     </select>
                 </div>
 
                 <div className="fr">
                     <label>API Configuration</label>
                     <div style={{ fontSize: 11, color: "var(--t2)", marginBottom: 10 }}>
-                        Connect your personal "AI Brain" here. The API Key allows the system
-                        to communicate with advanced 2026 models like Claude 5 or GPT-6.
+                        Connect your AI provider here. The API Key allows the system
+                        to communicate with advanced models like Claude 3.5 or GPT-4o.
                     </div>
 
                     {provider === "claude" && (

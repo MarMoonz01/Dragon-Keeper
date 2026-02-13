@@ -1,12 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Ring from '../components/Ring';
-import { WL } from '../data/constants';
+import { load, save } from '../utils/helpers';
 
 export default function HealthPage({ health, onSave }) {
     const [loc, setLoc] = useState(health);
     const s = (k, v) => setLoc(p => ({ ...p, [k]: v }));
     const [saved, setSaved] = useState(false);
-    const handleSave = () => { onSave(loc); setSaved(true); setTimeout(() => setSaved(false), 2000); };
+    const [weeklyHealth, setWeeklyHealth] = useState([0, 0, 0, 0, 0, 0, 0]);
+
+    useEffect(() => {
+        load("nx-health-history").then(h => {
+            if (h && Array.isArray(h)) setWeeklyHealth(h);
+        });
+    }, []);
+
+    const handleSave = () => {
+        // Calculate today's composite health score
+        const sleepPct = loc.sleep ? Math.min((loc.sleep / 8) * 100, 100) : 0;
+        const stepsPct = loc.steps ? Math.min((loc.steps / 10000) * 100, 100) : 0;
+        const waterPct = loc.water ? Math.min((loc.water / 3) * 100, 100) : 0;
+        const todayScore = Math.round((sleepPct + stepsPct + waterPct) / 3);
+
+        // Shift weekly data left, append today's score
+        const updated = [...weeklyHealth.slice(1), todayScore];
+        setWeeklyHealth(updated);
+        save("nx-health-history", updated);
+
+        onSave(loc);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2000);
+    };
+
     return (
         <div>
             <div className="ph"><div className="ph-title">Health Dashboard</div><div className="ph-sub">Log metrics · AI uses this to optimise your schedule</div></div>
@@ -71,7 +95,7 @@ export default function HealthPage({ health, onSave }) {
                     <div className="card">
                         <div className="ct">Weekly Trend</div>
                         <div className="bch">
-                            {[0, 0, 0, 0, 0, 0, loc.sleep ? Math.min((loc.sleep / 8) * 100, 100) : 0].map((h, i) => (
+                            {weeklyHealth.map((h, i) => (
                                 <div key={i} className="bc">
                                     <div className={"bb" + (i === 6 ? " act" : "")} style={{ height: h + "%", background: "var(--rose)" }} />
                                     <span style={{ fontSize: 9, color: "var(--t2)", marginTop: 4 }}>{["S", "M", "T", "W", "T", "F", "S"][i]}</span>

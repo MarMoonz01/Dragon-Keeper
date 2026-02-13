@@ -43,17 +43,6 @@ export default function App() {
     }
   }, []);
 
-  // Fix Stale Closure & Double Level Up: Handle Level Up side effects here
-  useEffect(() => {
-    if (levelUp) return; // Already showing
-    // Simple check: if xp implies higher level than current dragon.level
-    // But dragon state updates atomically. We need to detect *change*.
-    // For MVP, checking if calculated level > stored level is enough if we trust dragon state.
-    // However, dragon state *is* the source.
-    // Let's rely on the previous `completeTask` logic but move the *effect* out? 
-    // Actually, simply cleaning up the duplicate call and using functional state in completeTask is enough for the Stale Closure.
-  }, [dragon]);
-
   const fetchDailyPlan = async () => {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase.from('daily_plans').select('*').eq('date', today).single();
@@ -125,7 +114,7 @@ export default function App() {
     // if (!supabase) return alert("Connect Supabase to use End of Day analysis."); // Checked in handleEndDay
     setAnalyzing(true);
     const completed = tasks.filter(t => t.done);
-    const score = Math.round((completed.length / tasks.length) * 100);
+    const score = tasks.length ? Math.round((completed.length / tasks.length) * 100) : 0;
 
     const prompt = `Analyze my day.
 Completed: ${completed.map(t => t.name).join(", ")}
@@ -173,34 +162,22 @@ Respond in this JSON format:
 
   const showToast = (icon, title, msg) => { setToast({ icon, title, msg }); setTimeout(() => setToast(null), 3500); };
 
-  const completeTask = useCallback((id) => {
+  const completeTask = useCallback((id, xp) => {
     setDragon(prevDragon => {
-      const task = tasks.find(t => t.id === id);
-      if (!task || task.done) return prevDragon;
-
-      const nxp = prevDragon.xp + task.xp;
+      const nxp = prevDragon.xp + xp;
       const nlv = Math.floor(nxp / 100) + 1;
-
-      // Side effects (safe to do here for simple app, or move to useEffect)
       if (nlv > prevDragon.level) setTimeout(() => setLevelUp(nlv), 400);
-      // Note: Removed duplicate boolean check line
-
       save("nx-dragon", { xp: nxp, level: nlv });
-      showToast("⚡", "Task Complete!", "+" + task.xp + " XP earned! 🐉");
+      showToast("⚡", "Task Complete!", "+" + xp + " XP earned! 🐉");
       return { xp: nxp, level: nlv };
     });
 
     setTasks(prev => {
-      // We don't need 'dragon' here anymore, avoiding stale closure
       const upd = prev.map(x => x.id === id ? { ...x, done: true } : x);
       updateTaskStatus(upd);
       return upd;
     });
-  }, [tasks]); // Dep on tasks is needed to find task xp, unless we pass xp in. Better: pass ID only and find in functional update? No, tasks state access is tricky inside dragon updater.
-  // Actually, 'tasks' is also a closure dependency. 
-  // BETTER FIX: 
-  // 1. Pass task object or XP to completeTask, not just ID.
-  // 2. Use functional updates for everything.
+  }, []); // No closure dependencies — xp is passed as parameter
 
   const addTask = t => {
     setTasks(prev => {
@@ -212,12 +189,15 @@ Respond in this JSON format:
   };
 
   const onDefeat = reward => {
-    const nxp = dragon.xp + reward, nlv = Math.floor(nxp / 100) + 1;
-    const nd = { xp: nxp, level: nlv };
-    setDragon(nd); save("nx-dragon", nd);
+    setDragon(prev => {
+      const nxp = prev.xp + reward;
+      const nlv = Math.floor(nxp / 100) + 1;
+      if (nlv > prev.level) setTimeout(() => setLevelUp(nlv), 600);
+      save("nx-dragon", { xp: nxp, level: nlv });
+      return { xp: nxp, level: nlv };
+    });
     setStats(p => { const u = { ...p, monstersDefeated: (p.monstersDefeated || 0) + 1 }; save("nx-stats", u); return u; });
     showToast("🏆", "Monster Defeated!", "+" + reward + " XP! Next battle unlocked.");
-    if (nlv > dragon.level) setTimeout(() => setLevelUp(nlv), 600);
   };
 
   const onGcalConnect = () => {
