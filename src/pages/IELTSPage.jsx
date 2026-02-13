@@ -536,34 +536,44 @@ IMPROVE: [two bullet points]` }],
 
             {tab === "flashcards" && (
                 <div>
-                    <div style={{ textAlign: "center", marginBottom: 14 }}>
-                        <span style={{ fontSize: 11, color: "var(--t2)" }}>Card {fcIdx + 1} of {notebook.filter(i => i.category === 'vocab').length} · Tap to reveal</span>
-                    </div>
-                    <div className="fc" onClick={() => setFcFlip(f => !f)}>
-                        {!fcFlip ? (
-                            <>
-                                <div className="fcw">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.word}</div>
-                                <div className="fcp">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.phonetic}</div>
-                                <div style={{ fontSize: 11, color: "var(--t2)", marginTop: 14 }}>Tap to reveal ↓</div>
-                            </>
-                        ) : (
-                            <>
-                                <div style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.type}</div>
-                                <div style={{ fontSize: 15, color: "var(--t1)", fontWeight: 700, marginBottom: 8 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.def}</div>
-                                <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", fontStyle: "italic", borderLeft: "2px solid var(--violet)", paddingLeft: 10 }}>"{notebook.filter(i => i.category === 'vocab')[fcIdx]?.example}"</div>
-                            </>
-                        )}
-                    </div>
-                    <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
-                        <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => Math.max(0, i - 1)) }}>← Prev</button>
-                        {fcFlip && (
-                            <>
-                                <button className="btn btn-sm" style={{ background: "rgba(255,94,135,.18)", color: "var(--rose)", border: "1px solid rgba(255,94,135,.3)" }} onClick={() => { setFcFlip(false); setFcIdx(i => (i + 1) % notebook.filter(n => n.category === 'vocab').length) }}>😐 Hard</button>
-                                <button className="btn btn-sm" style={{ background: "rgba(52,211,153,.18)", color: "var(--green)", border: "1px solid rgba(52,211,153,.3)" }} onClick={() => { setFcFlip(false); setFcIdx(i => (i + 1) % notebook.filter(n => n.category === 'vocab').length) }}>✓ Got it</button>
-                            </>
-                        )}
-                        <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => (i + 1) % notebook.filter(n => n.category === 'vocab').length) }}>Next →</button>
-                    </div>
+                    {notebook.filter(i => i.category === 'vocab').length === 0 ? (
+                        <div className="card" style={{ textAlign: "center", padding: 40 }}>
+                            <div style={{ fontSize: 36, marginBottom: 12 }}>📚</div>
+                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>No Flashcards Yet</div>
+                            <div style={{ fontSize: 12, color: "var(--t2)" }}>Head to the <strong>Notebook</strong> tab and add some vocabulary first!</div>
+                        </div>
+                    ) : (
+                        <>
+                            <div style={{ textAlign: "center", marginBottom: 14 }}>
+                                <span style={{ fontSize: 11, color: "var(--t2)" }}>Card {fcIdx + 1} of {notebook.filter(i => i.category === 'vocab').length} · Tap to reveal</span>
+                            </div>
+                            <div className="fc" onClick={() => setFcFlip(f => !f)}>
+                                {!fcFlip ? (
+                                    <>
+                                        <div className="fcw">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.word}</div>
+                                        <div className="fcp">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.phonetic}</div>
+                                        <div style={{ fontSize: 11, color: "var(--t2)", marginTop: 14 }}>Tap to reveal ↓</div>
+                                    </>
+                                ) : (
+                                    <>
+                                        <div style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.type}</div>
+                                        <div style={{ fontSize: 15, color: "var(--t1)", fontWeight: 700, marginBottom: 8 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.def}</div>
+                                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", fontStyle: "italic", borderLeft: "2px solid var(--violet)", paddingLeft: 10 }}>"{notebook.filter(i => i.category === 'vocab')[fcIdx]?.example}"</div>
+                                    </>
+                                )}
+                            </div>
+                            <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
+                                <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => Math.max(0, i - 1)) }}>← Prev</button>
+                                {fcFlip && (
+                                    <>
+                                        <button className="btn btn-sm" style={{ background: "rgba(255,94,135,.18)", color: "var(--rose)", border: "1px solid rgba(255,94,135,.3)" }} onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>😐 Hard</button>
+                                        <button className="btn btn-sm" style={{ background: "rgba(52,211,153,.18)", color: "var(--green)", border: "1px solid rgba(52,211,153,.3)" }} onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>✓ Got it</button>
+                                    </>
+                                )}
+                                <button className="btn btn-gh" onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>Next →</button>
+                            </div>
+                        </>
+                    )}
                 </div>
             )}
 

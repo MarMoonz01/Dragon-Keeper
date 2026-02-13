@@ -48,7 +48,7 @@ export default function BattleMode({ tasks, defeated, onDefeat }) {
             </div>
             <div className="dhpbar"><div className="dhpfill" style={{ width: `${dhp}%` }} /></div>
             <div style={{ margin: "10px 0 5px", fontSize: 10, color: "var(--t2)", fontWeight: 700, textTransform: "uppercase", letterSpacing: .5 }}>Completed tasks = attacks:</div>
-            {doneTasks.length === 0 && <div style={{ fontSize: 11, color: "var(--t3)", padding: "6px 0" }}>Complete tasks above to unlock attacks!</div>}
+            {doneTasks.length === 0 && <div style={{ fontSize: 11, color: "var(--t3)", padding: "6px 0" }}>Complete tasks on Dashboard to unlock attacks!</div>}
             <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginBottom: 10 }}>
                 {doneTasks.slice(0, 4).map(t => (
                     <button key={t.id} className="btn btn-r btn-sm" onClick={() => attack(t)} disabled={won || lost}>
@@ -61,6 +61,9 @@ export default function BattleMode({ tasks, defeated, onDefeat }) {
                 <div style={{ textAlign: "center", marginTop: 10, padding: 10, background: won ? "rgba(52,211,153,.1)" : "rgba(255,94,135,.1)", borderRadius: 9, border: `1px solid ${won ? "rgba(52,211,153,.2)" : "rgba(255,94,135,.2)"}` }}>
                     <div style={{ fontSize: 20, marginBottom: 3 }}>{won ? "🏆" : "💀"}</div>
                     <div style={{ fontWeight: 700, color: won ? "var(--green)" : "var(--rose)" }}>{won ? `Victory! +${M.reward} XP claimed` : "Defeated... Keep grinding!"}</div>
+                    <button className="btn btn-v btn-sm" style={{ marginTop: 10 }} onClick={() => { setMhp(M.maxHp); setDhp(100); setWon(false); setLost(false); setLog(["⚔️ New battle begins!"]); }}>
+                        ⚔️ Next Battle
+                    </button>
                 </div>
             )}
         </div>

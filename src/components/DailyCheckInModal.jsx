@@ -9,7 +9,7 @@ export default function DailyCheckInModal({ onClose, onSave }) {
 
     const handleSubmit = () => {
         onSave(metrics);
-        onClose();
+        // Don't close — parent will close after AI analysis completes
     };
 
     const categories = [

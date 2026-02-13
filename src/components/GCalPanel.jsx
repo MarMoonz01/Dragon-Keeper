@@ -15,7 +15,7 @@ export default function GCalPanel({ gcal, onConnect, onPush, pushing }) {
             {gcal.connected ? (
                 <div style={{ display: "flex", gap: 8 }}>
                     <button className="btn btn-g btn-sm" onClick={onPush} disabled={pushing} style={{ flex: 1 }}>{pushing ? "⏳ Syncing..." : "📤 Push Tasks"}</button>
-                    <button className="btn btn-gh btn-sm" style={{ flex: 1 }}>📥 Import</button>
+                    <button className="btn btn-gh btn-sm" style={{ flex: 1 }} onClick={() => alert("Google Calendar import requires OAuth setup. See Settings for details.")}>📥 Import</button>
                 </div>
             ) : (
                 <div className="ins" style={{ marginTop: 8 }}>

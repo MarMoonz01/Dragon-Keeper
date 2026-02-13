@@ -153,31 +153,40 @@ Respond in this JSON format:
       showToast("❌", "Error", "Could not analyze day.");
     }
     setAnalyzing(false);
+    setShowCheckIn(false); // Close modal after analysis completes
   };
 
   const handleEndDay = () => {
-    if (!supabase) return alert("Connect Supabase to use End of Day analysis.");
+    if (!supabase) {
+      showToast("⚠️", "Supabase Required", "Connect Supabase in Settings to use End of Day analysis.");
+      return;
+    }
     setShowCheckIn(true);
   };
 
   const showToast = (icon, title, msg) => { setToast({ icon, title, msg }); setTimeout(() => setToast(null), 3500); };
 
   const completeTask = useCallback((id, xp) => {
-    setDragon(prevDragon => {
-      const nxp = prevDragon.xp + xp;
-      const nlv = Math.floor(nxp / 100) + 1;
-      if (nlv > prevDragon.level) setTimeout(() => setLevelUp(nlv), 400);
-      save("nx-dragon", { xp: nxp, level: nlv });
-      showToast("⚡", "Task Complete!", "+" + xp + " XP earned! 🐉");
-      return { xp: nxp, level: nlv };
-    });
-
+    // Guard: if task is already done, don't award XP again
     setTasks(prev => {
+      const task = prev.find(t => t.id === id);
+      if (!task || task.done) return prev; // Already completed — no-op
+
+      // Award XP via functional updater (no stale closure)
+      setDragon(prevDragon => {
+        const nxp = prevDragon.xp + xp;
+        const nlv = Math.floor(nxp / 100) + 1;
+        if (nlv > prevDragon.level) setTimeout(() => setLevelUp(nlv), 400);
+        save("nx-dragon", { xp: nxp, level: nlv });
+        showToast("⚡", "Task Complete!", "+" + xp + " XP earned! 🐉");
+        return { xp: nxp, level: nlv };
+      });
+
       const upd = prev.map(x => x.id === id ? { ...x, done: true } : x);
       updateTaskStatus(upd);
       return upd;
     });
-  }, []); // No closure dependencies — xp is passed as parameter
+  }, []); // No closure dependencies
 
   const addTask = t => {
     setTasks(prev => {
@@ -236,6 +245,22 @@ Respond in this JSON format:
           {page === "ielts" && <IELTSPage />}
           {page === "health" && <HealthPage health={health} onSave={saveHealth} />}
         </main>
+      </div>
+
+      {/* Mobile Bottom Navigation */}
+      <div className="mobile-nav">
+        {[
+          { id: "dashboard", ic: "🏠", label: "Home" },
+          { id: "ielts", ic: "📚", label: "IELTS" },
+          { id: "hatchery", ic: "⚔️", label: "Battle" },
+          { id: "analysis", ic: "📊", label: "Analysis" },
+          { id: "health", ic: "❤️", label: "Health" },
+        ].map(n => (
+          <button key={n.id} className={"mob-item" + (page === n.id ? " on" : "")} onClick={() => setPage(n.id)}>
+            <span className="mob-ic">{n.ic}</span>
+            {n.label}
+          </button>
+        ))}
       </div>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onReset={resetGame} />}
