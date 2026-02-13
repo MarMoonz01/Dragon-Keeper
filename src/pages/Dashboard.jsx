@@ -6,7 +6,8 @@ import DragonPanel from '../components/DragonPanel';
 import GCalPanel from '../components/GCalPanel';
 import MiniCal from '../components/MiniCal';
 import { load, save, ai } from '../utils/helpers';
-import { WL, WD } from '../data/constants';
+import { supabase } from '../utils/supabaseClient';
+import { WL } from '../data/constants';
 
 export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gcal, onConnect, onPush, pushing, stats }) {
     const [genLoading, setGenLoading] = useState(false);
@@ -14,6 +15,8 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gc
     const [briefing, setBriefing] = useState("");
     const [briefLoading, setBriefLoading] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
+    const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
+
     const done = tasks.filter(t => t.done).length;
     const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
 
@@ -25,7 +28,28 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gc
             ai([{ role: "user", content: "Daily briefing: IELTS target 7.5 (current 6.5), healthy habits. " + new Date().toDateString() + ". Dragon Lv." + dragon.level + ", streak " + streak + " days. Give: 1 key priority, 1 IELTS tip, 1 motivational line. Max 90 words." }])
                 .then(r => { setBriefing(r); save(key, r); setBriefLoading(false); });
         });
-    }, []);
+
+        if (supabase) {
+            fetchWeeklyHistory();
+        }
+    }, [supabase]);
+
+    const fetchWeeklyHistory = async () => {
+        // Fetch last 7 days of daily summaries
+        const { data } = await supabase.from('daily_summaries')
+            .select('date, productivity_score')
+            .order('date', { ascending: false })
+            .limit(7);
+
+        if (data) {
+            // Map to last 7 days (simplified for MVP: just show latest 7 data points or padding)
+            // Ideally: map to specific days of week. For now, let's just reverse the data to show trend.
+            const scores = data.map(d => d.productivity_score).reverse();
+            // Pad with 0s if less than 7
+            const padded = [...Array(Math.max(0, 7 - scores.length)).fill(0), ...scores];
+            setWeeklyData(padded);
+        }
+    };
 
     const genSchedule = async () => {
         setGenLoading(true);
@@ -100,9 +124,9 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gc
                     <div className="card">
                         <div className="ct">Weekly Performance</div>
                         <div className="bch">
-                            {WD.map((h, i) => (
+                            {weeklyData.map((h, i) => (
                                 <div key={i} className="bc">
-                                    <div className={"bb" + (i === 4 ? " act" : "")} style={{ height: h + "%" }} />
+                                    <div className={"bb" + (i === 6 ? " act" : "")} style={{ height: h + "%" }} />
                                     <span className="bl">{WL[i]}</span>
                                 </div>
                             ))}

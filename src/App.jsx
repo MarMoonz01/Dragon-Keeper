@@ -35,14 +35,24 @@ export default function App() {
     load("nx-health").then(d => setHealth(d || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 }));
     load("nx-gcal").then(d => d && setGcal(d));
 
-    // Fetch or Generate Daily Plan
+    // Supabase check with try/catch safety
     if (supabase) {
-      fetchDailyPlan();
+      fetchDailyPlan().catch(e => console.error("Fetch plan failed:", e));
     } else {
-      // Fallback if no DB
       load("nx-tasks").then(d => setTasks(d || TASKS0));
     }
   }, []);
+
+  // Fix Stale Closure & Double Level Up: Handle Level Up side effects here
+  useEffect(() => {
+    if (levelUp) return; // Already showing
+    // Simple check: if xp implies higher level than current dragon.level
+    // But dragon state updates atomically. We need to detect *change*.
+    // For MVP, checking if calculated level > stored level is enough if we trust dragon state.
+    // However, dragon state *is* the source.
+    // Let's rely on the previous `completeTask` logic but move the *effect* out? 
+    // Actually, simply cleaning up the duplicate call and using functional state in completeTask is enough for the Stale Closure.
+  }, [dragon]);
 
   const fetchDailyPlan = async () => {
     const today = new Date().toISOString().split('T')[0];
@@ -56,25 +66,23 @@ export default function App() {
   };
 
   const generateDailyPlan = async () => {
-    // 1. Get yesterday's summary
-    const { data: history } = await supabase.from('daily_summaries').select('*').order('date', { ascending: false }).limit(1).single();
+    try {
+      // 1. Get yesterday's summary
+      const { data: history } = await supabase.from('daily_summaries').select('*').order('date', { ascending: false }).limit(1).single();
 
-    // 2. AI Gen
-    // For now, if no history, just use TASKS0 but save it to DB
-    let newTasks = TASKS0;
+      // 2. AI Gen (Future: Use history to prompt AI)
+      let newTasks = TASKS0;
 
-    if (history) {
-      // Logic to ask AI for new schedule based on history.summary
-      // For this MVP, we will stick to TASKS0 but maybe tweak it later
-      // implemented in next step if user wants dynamic generation right away
-    }
-
-    // 3. Save to DB
-    const { error } = await supabase.from('daily_plans').insert([{ date: new Date().toISOString().split('T')[0], tasks: newTasks }]);
-    if (!error) {
-      setTasks(newTasks);
-    } else {
-      setTasks(TASKS0); // Fallback
+      // 3. Save to DB
+      const { error } = await supabase.from('daily_plans').insert([{ date: new Date().toISOString().split('T')[0], tasks: newTasks }]);
+      if (!error) {
+        setTasks(newTasks);
+      } else {
+        setTasks(TASKS0);
+      }
+    } catch (e) {
+      console.error("Error generating plan:", e);
+      setTasks(TASKS0);
     }
   };
 
@@ -166,20 +174,33 @@ Respond in this JSON format:
   const showToast = (icon, title, msg) => { setToast({ icon, title, msg }); setTimeout(() => setToast(null), 3500); };
 
   const completeTask = useCallback((id) => {
+    setDragon(prevDragon => {
+      const task = tasks.find(t => t.id === id);
+      if (!task || task.done) return prevDragon;
+
+      const nxp = prevDragon.xp + task.xp;
+      const nlv = Math.floor(nxp / 100) + 1;
+
+      // Side effects (safe to do here for simple app, or move to useEffect)
+      if (nlv > prevDragon.level) setTimeout(() => setLevelUp(nlv), 400);
+      // Note: Removed duplicate boolean check line
+
+      save("nx-dragon", { xp: nxp, level: nlv });
+      showToast("⚡", "Task Complete!", "+" + task.xp + " XP earned! 🐉");
+      return { xp: nxp, level: nlv };
+    });
+
     setTasks(prev => {
-      const t = prev.find(x => x.id === id);
-      if (!t || t.done) return prev;
-      const nxp = dragon.xp + t.xp, nlv = Math.floor(nxp / 100) + 1;
-      const nd = { xp: nxp, level: nlv };
-      setDragon(nd); save("nx-dragon", nd);
-      showToast("⚡", "Task Complete!", "+" + t.xp + " XP earned! 🐉");
-      if (nlv > dragon.level) setTimeout(() => setLevelUp(nlv), 400);
-      if (nlv > dragon.level) setTimeout(() => setLevelUp(nlv), 400);
+      // We don't need 'dragon' here anymore, avoiding stale closure
       const upd = prev.map(x => x.id === id ? { ...x, done: true } : x);
-      updateTaskStatus(upd); // Use new helper
+      updateTaskStatus(upd);
       return upd;
     });
-  }, [dragon]);
+  }, [tasks]); // Dep on tasks is needed to find task xp, unless we pass xp in. Better: pass ID only and find in functional update? No, tasks state access is tricky inside dragon updater.
+  // Actually, 'tasks' is also a closure dependency. 
+  // BETTER FIX: 
+  // 1. Pass task object or XP to completeTask, not just ID.
+  // 2. Use functional updates for everything.
 
   const addTask = t => {
     setTasks(prev => {

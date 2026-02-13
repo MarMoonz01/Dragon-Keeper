@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Loader from '../components/Loader';
 import { ai } from '../utils/helpers';
 import { ISKILLS, TOPICS } from '../data/constants';
@@ -22,6 +22,14 @@ export default function IELTSPage() {
     const [speakFb, setSpeakFb] = useState("");
     const [speakLoading, setSpeakLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
+    const recognitionRef = useRef(null);
+
+    // Cleanup speech recognition on unmount
+    useEffect(() => {
+        return () => {
+            if (recognitionRef.current) recognitionRef.current.stop();
+        };
+    }, []);
     const [fcIdx, setFcIdx] = useState(0);
     const [fcFlip, setFcFlip] = useState(false);
     const [realScores, setRealScores] = useState([]);
@@ -76,7 +84,7 @@ export default function IELTSPage() {
         const r = parseFloat(newLog.reading) || 0;
         const w = parseFloat(newLog.writing) || 0;
         const s = parseFloat(newLog.speaking) || 0;
-        const overall = ((l + r + w + s) / 4).toFixed(1); // Simple avg for now, typically rounded to nearest 0.5
+        const overall = (Math.round((l + r + w + s) / 4 * 2) / 2).toFixed(1); // Standard IELTS Rounding (nearest 0.5)
 
         const { error } = await supabase
             .from('scores')
@@ -227,7 +235,7 @@ IMPROVE: [two bullet points]` }],
 
     const toggleRecord = () => {
         if (isRecording) {
-            // Stop handled by onend usually, but we can force stop if needed, or just flip state
+            if (recognitionRef.current) recognitionRef.current.stop();
             setIsRecording(false);
             return;
         }
@@ -240,6 +248,9 @@ IMPROVE: [two bullet points]` }],
         recognition.interimResults = false;
         recognition.maxAlternatives = 1;
 
+        recognition.maxAlternatives = 1;
+
+        recognitionRef.current = recognition;
         recognition.start();
         setIsRecording(true);
 

@@ -22,7 +22,8 @@ export default function SettingsModal({ onClose, onReset }) {
 
     const handleSave = () => {
         save("nx-settings", { provider, ...keys });
-        onClose();
+        // Force reload to apply new settings/keys to Supabase client
+        window.location.reload();
     };
 
     return (
