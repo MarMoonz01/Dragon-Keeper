@@ -64,7 +64,7 @@ export default function HealthPage({ health, onSave }) {
                             <div key={i} className="goal">
                                 <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(167,139,250,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>{g.ic}</div>
                                 <div style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{g.n}</div>
-                                <input className="inp" style={{ width: 70, textAlign: "center" }} defaultValue={g.v} disabled />
+                                <div style={{ width: 70, textAlign: "center", fontFamily: "'JetBrains Mono', monospace", fontSize: 14, fontWeight: 700, color: "var(--teal)", background: "rgba(0,221,179,.08)", border: "1px solid rgba(0,221,179,.15)", borderRadius: 7, padding: "5px 0" }}>{g.v}</div>
                             </div>
                         ))}
                     </div>

@@ -64,11 +64,12 @@ export default function AnalysisPage({ tasks, dragon, stats, streak }) {
             <div className="g4" style={{ marginBottom: 16 }}>
                 {["Mood", "Energy", "Focus", "Sleep"].map((m, i) => {
                     const v = [metrics.mood, metrics.energy, metrics.focus, metrics.sleep][i];
+                    const hasData = v > 0;
                     return (
                         <div key={m} className="sc">
                             <div className="sc-ic">{["😊", "⚡", "🎯", "💤"][i]}</div>
-                            <div className="sc-v" style={{ color: "var(--teal)" }}>{v || "—"}/5</div>
-                            <div className="sc-l">{m} Today</div>
+                            <div className="sc-v" style={{ color: hasData ? "var(--teal)" : "var(--t3)" }}>{hasData ? v + "/5" : "—"}</div>
+                            <div className="sc-l">{hasData ? m + " Today" : "Not logged yet"}</div>
                             <div style={{ display: "flex", gap: 3, marginTop: 6 }}>
                                 {[1, 2, 3, 4, 5].map(s => <div key={s} style={{ flex: 1, height: 3, borderRadius: 2, background: s <= v ? "var(--teal)" : "rgba(255,255,255,.08)" }} />)}
                             </div>

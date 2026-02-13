@@ -38,6 +38,7 @@ export default function App() {
     // Supabase check with try/catch safety
     if (supabase) {
       fetchDailyPlan().catch(e => console.error("Fetch plan failed:", e));
+      calculateStreak();
     } else {
       load("nx-tasks").then(d => setTasks(d || TASKS0));
     }
@@ -56,11 +57,45 @@ export default function App() {
 
   const generateDailyPlan = async () => {
     try {
-      // 1. Get yesterday's summary
+      // 1. Get yesterday's summary for context
       const { data: history } = await supabase.from('daily_summaries').select('*').order('date', { ascending: false }).limit(1).single();
 
-      // 2. AI Gen (Future: Use history to prompt AI)
+      // 2. AI-powered plan generation
+      const context = history
+        ? `Yesterday: ${history.summary || 'No summary'}. Mood: ${history.mood || 'Unknown'}. Score: ${history.productivity_score || 0}%. Completed: ${(history.completed_tasks || []).map(t => t.name).join(', ') || 'none'}.`
+        : 'First day — no history yet.';
+
+      const prompt = `Generate today's daily plan. Context: ${context}
+Create exactly 10 tasks as a JSON array. Each task must have:
+- id (number 1-10), name (string), time (HH:MM), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
+Front-load IELTS before noon. Include health, work, and mindfulness tasks. Mix categories.
+Respond with ONLY the JSON array, no explanation.`;
+
+      const res = await ai([{ role: "user", content: prompt }], "You are NEXUS AI Life Secretary. Generate practical, balanced daily schedules in JSON format.");
+
+      // Parse AI response
       let newTasks = TASKS0;
+      try {
+        const jsonMatch = res.match(/\[\s*\{[\s\S]*\}\s*\]/);
+        if (jsonMatch) {
+          const parsed = JSON.parse(jsonMatch[0]);
+          // Validate structure
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name && parsed[0].cat) {
+            newTasks = parsed.map((t, i) => ({
+              id: t.id || i + 1,
+              name: String(t.name || ''),
+              time: String(t.time || '08:00'),
+              cat: ['health', 'work', 'ielts', 'mind', 'social'].includes(t.cat) ? t.cat : 'work',
+              xp: Math.max(10, Math.min(60, Number(t.xp) || 20)),
+              done: false,
+              calSync: Boolean(t.calSync),
+              hp: Math.max(8, Math.min(50, Number(t.hp) || 15))
+            }));
+          }
+        }
+      } catch (parseErr) {
+        console.warn("AI plan parse failed, using defaults:", parseErr);
+      }
 
       // 3. Save to DB
       const { error } = await supabase.from('daily_plans').insert([{ date: new Date().toISOString().split('T')[0], tasks: newTasks }]);
@@ -72,6 +107,50 @@ export default function App() {
     } catch (e) {
       console.error("Error generating plan:", e);
       setTasks(TASKS0);
+    }
+  };
+
+  const calculateStreak = async () => {
+    try {
+      const { data } = await supabase.from('daily_summaries')
+        .select('date')
+        .order('date', { ascending: false })
+        .limit(60);
+      if (!data || data.length === 0) return;
+
+      let streak = 0;
+      const today = new Date();
+      // Start from yesterday (today hasn't ended yet)
+      let checkDate = new Date(today);
+      checkDate.setDate(checkDate.getDate() - 1);
+
+      const dateSet = new Set(data.map(d => d.date));
+
+      // Check if today is already logged
+      const todayStr = today.toISOString().split('T')[0];
+      if (dateSet.has(todayStr)) {
+        streak = 1;
+        checkDate = new Date(today);
+        checkDate.setDate(checkDate.getDate() - 1);
+      }
+
+      while (true) {
+        const dateStr = checkDate.toISOString().split('T')[0];
+        if (dateSet.has(dateStr)) {
+          streak++;
+          checkDate.setDate(checkDate.getDate() - 1);
+        } else {
+          break;
+        }
+      }
+
+      setStats(prev => {
+        const updated = { ...prev, streak };
+        save("nx-stats", updated);
+        return updated;
+      });
+    } catch (e) {
+      console.error("Streak calc error:", e);
     }
   };
 
@@ -154,6 +233,8 @@ Respond in this JSON format:
     }
     setAnalyzing(false);
     setShowCheckIn(false); // Close modal after analysis completes
+    // Recalculate streak after saving new summary
+    if (supabase) calculateStreak();
   };
 
   const handleEndDay = () => {
@@ -232,7 +313,7 @@ Respond in this JSON format:
         <main className="main">
           {page === "dashboard" && (
             <>
-              <Dashboard tasks={tasks} onComplete={completeTask} dragon={dragon} streak={stats.streak || 7} onAdd={addTask} gcal={gcal} onConnect={onGcalConnect} onPush={onGcalPush} pushing={gcalPushing} stats={stats} />
+              <Dashboard tasks={tasks} onComplete={completeTask} dragon={dragon} streak={stats.streak || 0} onAdd={addTask} gcal={gcal} onConnect={onGcalConnect} onPush={onGcalPush} pushing={gcalPushing} stats={stats} />
               <div style={{ padding: "0 24px 24px" }}>
                 <button className="btn btn-gh" style={{ width: "100%", justifyContent: "center", border: "1px dashed var(--bdr)", padding: 12 }} onClick={handleEndDay} disabled={analyzing}>
                   {analyzing ? "🌙 Analysing Day..." : "🌙 End Day & Analyze Performance"}
@@ -240,8 +321,8 @@ Respond in this JSON format:
               </div>
             </>
           )}
-          {page === "analysis" && <AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={stats.streak || 7} />}
-          {page === "hatchery" && <HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={onDefeat} streak={stats.streak || 7} />}
+          {page === "analysis" && <AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={stats.streak || 0} />}
+          {page === "hatchery" && <HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={onDefeat} streak={stats.streak || 0} />}
           {page === "ielts" && <IELTSPage />}
           {page === "health" && <HealthPage health={health} onSave={saveHealth} />}
         </main>

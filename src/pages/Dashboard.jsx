@@ -149,7 +149,7 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, gc
                     </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} />
+                    <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks} />
                     <GCalPanel gcal={gcal} onConnect={onConnect} onPush={onPush} pushing={pushing} />
                     <div className="card"><div className="ct">Calendar</div><MiniCal hi={[5, 8, 11, 13, 16, 19, 22, 25]} /></div>
                 </div>
