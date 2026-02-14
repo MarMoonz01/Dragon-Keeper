@@ -18,7 +18,8 @@ import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-    const { updateStats, dragon, streak, stats } = useGame();
+    const { updateStats, dragon, stats } = useGame();
+    const streak = stats.streak || 0;
     const { tasks, completeTask: onComplete, addTask: onAdd, editTask: onEdit, deleteTask: onDelete, gcalPushing: pushing, onGcalPush: onPush, showToast } = useTasks();
     const { gcal, updateGcal } = useSettings();
     const navigate = useNavigate();
@@ -47,7 +48,7 @@ export default function Dashboard() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dragon.level, streak, fetchWeeklyHistory, fetchCalHighlights]);
 
-    const fetchWeeklyHistory = async () => {
+    const fetchWeeklyHistory = React.useCallback(async () => {
         const today = new Date();
         const monday = new Date(today);
         monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Get this week's Monday
@@ -67,10 +68,10 @@ export default function Dashboard() {
             });
             setWeeklyData(mapped);
         }
-    };
+    }, []);
 
     // Issue #9: fetch real dates for MiniCal highlights
-    const fetchCalHighlights = async () => {
+    const fetchCalHighlights = React.useCallback(async () => {
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth();
         const start = new Date(y, m, 1).toISOString().split('T')[0];
@@ -79,7 +80,7 @@ export default function Dashboard() {
             .select('date')
             .gte('date', start).lte('date', end);
         if (data) setCalHighlights(data.map(d => new Date(d.date + 'T00:00:00').getDate()));
-    };
+    }, []);
 
     const genSchedule = async () => {
         setGenLoading(true);
@@ -151,7 +152,7 @@ export default function Dashboard() {
                                     onClick={() => {
                                         if (window.confirm(`Use 1 Streak Freeze? (${s.freezes} remaining)\n\nYour streak will be preserved even if you miss tasks today.`)) {
                                             updateStats({ streakFreezes: s.freezes - 1 });
-                                            showToast("🧊 Streak Freeze used! Streak preserved.");
+                                            showToast("🧊", "Streak Freeze Used", "Streak preserved!");
                                         }
                                     }}
                                     style={{ background: "rgba(56,189,248,.12)", border: "1px solid rgba(56,189,248,.3)", borderRadius: 6, cursor: "pointer", padding: "2px 6px", fontSize: 9, color: "var(--sky)", fontWeight: 700 }}

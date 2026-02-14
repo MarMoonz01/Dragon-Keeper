@@ -185,7 +185,15 @@ Answer based ONLY on the document provided. Keep it concise.`;
                 <div style={{ display: "flex", height: "100%", overflow: "hidden" }}>
                     {/* PDF Viewer */}
                     <div style={{ flex: 1, background: "#000", position: "relative" }}>
-                        <iframe src={activeDoc.url} style={{ width: "100%", height: "100%", border: "none" }} title="PDF Viewer" />
+                        {activeDoc.url ? (
+                            <iframe src={activeDoc.url} style={{ width: "100%", height: "100%", border: "none" }} title="PDF Viewer" />
+                        ) : (
+                            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 12, color: "var(--t2)" }}>
+                                <div style={{ fontSize: 40 }}>📄</div>
+                                <div style={{ fontWeight: 700 }}>{activeDoc.name}</div>
+                                <div style={{ fontSize: 12 }}>Re-upload PDF to view. AI chat is still available →</div>
+                            </div>
+                        )}
                         <button className="btn btn-gh" style={{ position: "absolute", top: 16, left: 16, background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)", color: "#fff", zIndex: 10 }} onClick={closeDoc}>
                             ← Back
                         </button>

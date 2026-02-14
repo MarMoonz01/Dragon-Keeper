@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTasks } from '../context/TaskContext';
 
 const getIconFromEmoji = (emoji) => {
     const canvas = document.createElement("canvas");

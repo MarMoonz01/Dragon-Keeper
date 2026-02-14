@@ -7,7 +7,8 @@ import { useGame } from '../context/GameContext';
 import { useTasks } from '../context/TaskContext';
 
 export default function HatcheryPage() {
-    const { dragon, stats, defeatMonster: onDefeat, streak } = useGame();
+    const { dragon, stats, defeatMonster: onDefeat } = useGame();
+    const streak = stats.streak || 0;
     const { tasks } = useTasks();
     const unlocked = ACHIEVEMENTS.map(a => ({
         ...a,

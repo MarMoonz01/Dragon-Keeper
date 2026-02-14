@@ -9,7 +9,8 @@ import { useGame } from '../context/GameContext';
 import { useTasks } from '../context/TaskContext';
 
 export default function AnalysisPage() {
-    const { dragon, streak } = useGame();
+    const { dragon, stats } = useGame();
+    const streak = stats.streak || 0;
     const { tasks } = useTasks();
     const [insight, setInsight] = useState("");
     const [loading, setLoading] = useState(false);
