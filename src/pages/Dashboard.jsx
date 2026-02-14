@@ -5,15 +5,14 @@ import Loader from '../components/Loader';
 import DragonPanel from '../components/DragonPanel';
 import GCalPanel from '../components/GCalPanel';
 import MiniCal from '../components/MiniCal';
+import BriefingCard from '../components/BriefingCard';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { WL } from '../data/constants';
 
-export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, onEdit, onDelete, gcal, onConnect, onPush, pushing, stats }) {
+export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, onEdit, onDelete, onFocus, gcal, onConnect, onPush, pushing, stats }) {
     const [genLoading, setGenLoading] = useState(false);
     const [aiSched, setAiSched] = useState("");
-    const [briefing, setBriefing] = useState("");
-    const [briefLoading, setBriefLoading] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
     const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [editingId, setEditingId] = useState(null);
@@ -26,20 +25,11 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
     const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
 
     useEffect(() => {
-        const key = "brief_" + new Date().toDateString() + "_lv" + dragon.level + "_s" + streak;
-        const c = load(key);
-        if (c) { setBriefing(c); } else {
-            setBriefLoading(true);
-            ai([{ role: "user", content: "Daily briefing: IELTS target 7.5 (current 6.5), healthy habits. " + new Date().toDateString() + ". Dragon Lv." + dragon.level + ", streak " + streak + " days. Give: 1 key priority, 1 IELTS tip, 1 motivational line. Max 90 words." }])
-                .then(r => { setBriefing(r); save(key, r); setBriefLoading(false); })
-                .catch(() => setBriefLoading(false));
-        }
-
         if (supabase) {
             fetchWeeklyHistory();
             fetchCalHighlights();
         }
-    }, [supabase, dragon.level, streak]);
+    }, [supabase]);
 
     const fetchWeeklyHistory = async () => {
         const today = new Date();
@@ -123,24 +113,7 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                 <div className="ph-title">Command Center</div>
                 <div className="ph-sub">{new Date().toLocaleDateString("en-US", { weekday: "long", day: "numeric", month: "long" })} · AI Secretary Active</div>
             </div>
-            {briefLoading && (
-                <div className="brief" style={{ opacity: 0.5 }}>
-                    <div className="brief-time" style={{ background: "rgba(255,255,255,.06)", width: "40%", height: 12, borderRadius: 4 }}>&nbsp;</div>
-                    <div className="brief-head" style={{ background: "rgba(255,255,255,.06)", width: "60%", height: 16, borderRadius: 4, marginTop: 6 }}>&nbsp;</div>
-                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 10 }}>
-                        <div style={{ background: "rgba(255,255,255,.04)", height: 10, borderRadius: 3, width: "100%" }}>&nbsp;</div>
-                        <div style={{ background: "rgba(255,255,255,.04)", height: 10, borderRadius: 3, width: "85%" }}>&nbsp;</div>
-                        <div style={{ background: "rgba(255,255,255,.04)", height: 10, borderRadius: 3, width: "70%" }}>&nbsp;</div>
-                    </div>
-                </div>
-            )}
-            {briefing && (
-                <div className="brief">
-                    <div className="brief-time">🌅 DAILY BRIEFING — {new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
-                    <div className="brief-head">Good morning, Scholar</div>
-                    <div style={{ fontSize: 12, color: "var(--t2)", lineHeight: 1.8 }}>{briefing}</div>
-                </div>
-            )}
+            <BriefingCard dragon={dragon} streak={streak} />
             <div className="g4" style={{ marginBottom: 18 }}>
                 {[
                     { ic: "⚡", v: pct + "%", l: "Daily Progress", ch: "+15% vs yesterday", pos: true, c: "var(--teal)" },

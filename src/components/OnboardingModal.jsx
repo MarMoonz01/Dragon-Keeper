@@ -261,7 +261,10 @@ export default function OnboardingPage({ onComplete }) {
                     {step < steps.length - 1 ? (
                         <button className="btn btn-g ob-btn" onClick={() => setStep(s => s + 1)}>Continue →</button>
                     ) : (
-                        <button className="btn btn-g ob-btn ob-launch" onClick={finish}>🚀 Launch NEXUS</button>
+                        <div style={{ display: "flex", gap: 10 }}>
+                            <button className="btn btn-gh ob-btn" onClick={finish} style={{ flex: 1 }}>Skip Setup</button>
+                            <button className="btn btn-g ob-btn ob-launch" onClick={finish} style={{ flex: 2 }}>🚀 Launch NEXUS</button>
+                        </div>
                     )}
                 </div>
             </div>

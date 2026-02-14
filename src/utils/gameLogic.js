@@ -14,8 +14,8 @@ export const generateRandomMonster = (playerLevel) => {
     // 2. Apply variance to stats
     const variance = (Math.random() * 0.4) + 0.8; // 0.8x to 1.2x
 
-    const hp = Math.round(template.hp * variance);
-    const xp = Math.round(template.xp * variance);
+    const hp = Math.round(template.maxHp * variance);
+    const xp = Math.round(template.reward * variance);
 
     // 3. Generate a unique name? (Optional)
     const prefixes = ["Angry", "Fierce", "Shadow", "Ancient", "Toxic", "Void"];

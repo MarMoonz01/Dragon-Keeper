@@ -56,6 +56,12 @@ export function GameProvider({ children }) {
         updateStats({ monstersDefeated: (stats.monstersDefeated || 0) + 1 });
     };
 
+    const calculateStreak = () => {
+        // Simple increment for now, logic can be enhanced later to check dates
+        const newStreak = (stats.streak || 0) + 1;
+        updateStats({ streak: newStreak });
+    };
+
     const value = {
         dragon,
         stats,
@@ -65,7 +71,8 @@ export function GameProvider({ children }) {
         addXP,
         updateStats,
         updateHealth,
-        defeatMonster
+        defeatMonster,
+        calculateStreak
     };
 
     return (

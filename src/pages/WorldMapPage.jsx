@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ZONES, ZONE_MILESTONES, DRAGONS } from '../data/constants';
-import { load, save } from '../utils/helpers';
+import MapNode from '../components/MapNode';
 
-const NODE_SIZE = 56;
 const BOSS_SIZE = 72;
 
 // Generate milestone nodes with due dates from deadline
@@ -201,37 +200,16 @@ export default function WorldMapPage({ dragon, stats, showToast, onXP }) {
         return paths;
     };
 
-    const renderNode = (node) => {
-        const status = getStatus(node.id);
-        const isBoss = node.type === "boss";
-        const size = isBoss ? BOSS_SIZE : NODE_SIZE;
-        const isAnimatingThis = animating === node.id;
-        const dueDays = daysFromNow(node.dueDate);
-        const isOverdue = status !== "cleared" && dueDays < 0;
-        const isDueSoon = status !== "cleared" && dueDays >= 0 && dueDays <= 2;
-        const score = quests[node.id]?.score;
-
-        return (
-            <div key={node.id}
-                className={`wm-node ${status}${isBoss ? " boss" : ""}${isAnimatingThis ? " clearing" : ""}${isOverdue ? " overdue" : ""}`}
-                style={{
-                    left: `${node.x}%`, top: `${node.y}%`,
-                    width: size, height: size,
-                    transform: "translate(-50%, -50%)"
-                }}
-                onClick={() => { if (status !== "locked") setSelected(node); }}
-            >
-                <div className="wm-node-em">{status === "locked" ? "❓" : node.em}</div>
-                {status === "cleared" && <div className="wm-node-check">✓</div>}
-                {status === "active" && <div className="wm-node-pulse" />}
-                {isBoss && status !== "locked" && <div className="wm-node-boss-label">BOSS</div>}
-                {score && <div className="wm-node-score">{"⭐".repeat(score)}</div>}
-                <div className={`wm-node-due${isOverdue ? " overdue" : ""}${isDueSoon ? " soon" : ""}`}>
-                    {status === "cleared" ? node.title : (isOverdue ? `⚠️ OVERDUE` : `${formatDate(node.dueDate)}`)}
-                </div>
-            </div>
-        );
-    };
+    const renderNode = useCallback((node) => (
+        <MapNode
+            key={node.id}
+            node={node}
+            status={getStatus(node.id)}
+            score={quests[node.id]?.score}
+            animating={animating}
+            onClick={(n) => { if (getStatus(n.id) !== "locked") setSelected(n); }}
+        />
+    ), [getStatus, quests, animating]);
 
     // Render Plan View (Grid)
     const renderPlanView = () => (

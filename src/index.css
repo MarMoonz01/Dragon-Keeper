@@ -2656,8 +2656,21 @@ select.inp {
     font-size: 13px !important
   }
 }
-.dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; height: 100%; overflow: hidden; }
-@media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr; overflow-y: auto; } }
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 24px;
+  height: 100%;
+  overflow: hidden;
+}
+
+@media (max-width: 1000px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+    overflow-y: auto;
+  }
+}
 
 /* Light Mode Overrides */
 body.light-mode {
@@ -2683,10 +2696,174 @@ body.light-mode {
 }
 
 /* Coffee Focus Animation */
-.coffee-container { position: relative; width: 180px; margin: 0 auto; }
-.coffee-cup { width: 120px; height: 140px; border: 5px solid var(--t2); border-radius: 0 0 50px 50px; position: relative; overflow: hidden; background: rgba(255,255,255,0.05); z-index: 2; }
-.coffee-handle { position: absolute; top: 20px; right: 26px; width: 40px; height: 60px; border: 5px solid var(--t2); border-radius: 0 20px 20px 0; z-index: 1; }
-.coffee-liquid { position: absolute; bottom: 0; left: 0; width: 100%; background: #6F4E37; transition: height 1s linear; border-top: 2px solid rgba(255,255,255,0.1); }
-.coffee-steam { position: absolute; top: -40px; left: 0; right: 60px; display: flex; justify-content: center; gap: 8; z-index: 0; }
-.steam-puff { width: 6px; height: 20px; background: var(--t2); border-radius: 10px; opacity: 0; animation: steamRise 2.5s infinite ease-out; filter: blur(3px); }
-@keyframes steamRise { 0% { transform: translateY(0) scale(1); opacity: 0; } 50% { opacity: 0.4; } 100% { transform: translateY(-40px) scale(1.5); opacity: 0; } }
+.coffee-container {
+  position: relative;
+  width: 180px;
+  margin: 0 auto;
+}
+
+.coffee-cup {
+  width: 120px;
+  height: 140px;
+  border: 5px solid var(--t2);
+  border-radius: 0 0 50px 50px;
+  position: relative;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.05);
+  z-index: 2;
+}
+
+.coffee-handle {
+  position: absolute;
+  top: 20px;
+  right: 26px;
+  width: 40px;
+  height: 60px;
+  border: 5px solid var(--t2);
+  border-radius: 0 20px 20px 0;
+  z-index: 1;
+}
+
+.coffee-liquid {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #6F4E37;
+  transition: height 1s linear;
+  border-top: 2px solid rgba(255, 255, 255, 0.1);
+}
+
+.coffee-steam {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  right: 60px;
+  display: flex;
+  justify-content: center;
+  gap: 8;
+  z-index: 0;
+}
+
+.steam-puff {
+  width: 6px;
+  height: 20px;
+  background: var(--t2);
+  border-radius: 10px;
+  opacity: 0;
+  animation: steamRise 2.5s infinite ease-out;
+  filter: blur(3px);
+}
+
+@keyframes steamRise {
+  0% {
+    transform: translateY(0) scale(1);
+    opacity: 0;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
+
+  100% {
+    transform: translateY(-40px) scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Mobile Adjustments */
+@media (max-width: 768px) {
+  .app {
+    flex-direction: column;
+  }
+
+  .sb {
+    position: fixed;
+    top: 0;
+    left: -240px;
+    height: 100%;
+    z-index: 1000;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5);
+  }
+
+  .sb.open {
+    left: 0;
+  }
+
+  .sb-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    z-index: 999;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s;
+  }
+
+  .sb-overlay.open {
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .main {
+    padding: 16px;
+    padding-bottom: 80px;
+    /* Space for mobile nav */
+  }
+
+  /* Stats Carousel */
+  .g4 {
+    display: flex;
+    overflow-x: auto;
+    padding-bottom: 12px;
+    scroll-snap-type: x mandatory;
+    margin-right: -16px;
+    /* Bleed to edge */
+    padding-right: 16px;
+  }
+
+  .g4>* {
+    flex: 0 0 160px;
+    /* Card width */
+    scroll-snap-align: start;
+  }
+
+  /* Hide scrollbar for carousel but allow functionality */
+  .g4::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .ph-title {
+    font-size: 16px;
+  }
+}
+
+.hamburger {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 100;
+  background: var(--card);
+  border: 1px solid var(--bdr);
+  color: var(--t1);
+  padding: 8px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .hamburger {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .ph {
+    margin-top: 40px;
+    /* Push content down for hamburger */
+  }
+}

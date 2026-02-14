@@ -4,6 +4,7 @@ import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { GameProvider, useGame } from './context/GameContext';
 import { TaskProvider, useTasks } from './context/TaskContext';
 import { IELTSProvider } from './context/IELTSContext';
+import DevWarning from './components/DevWarning';
 
 import Sidebar from './components/Sidebar';
 import SettingsModal from './components/SettingsModal';
@@ -32,6 +33,12 @@ function AppContent() {
   const { tasks, analyzing, showCheckIn, setShowCheckIn, endDay, showToast, toast, completeTask, addTask, editTask, deleteTask, gcalPushing, onGcalPush } = useTasks();
 
   const [focusTask, setFocusTask] = useState(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  // Close sidebar on route change
+  React.useEffect(() => {
+    setIsSidebarOpen(false);
+  }, [location.pathname]);
 
   const startFocus = (task) => {
     setFocusTask(task);
@@ -57,7 +64,9 @@ function AppContent() {
   return (
     <>
       <div className="app">
-        <Sidebar dragon={dragon} onSettings={() => setShowSettings(true)} />
+        <div className={`sb-overlay${isSidebarOpen ? " open" : ""}`} onClick={() => setIsSidebarOpen(false)} />
+        <button className="hamburger" onClick={() => setIsSidebarOpen(true)}>☰</button>
+        <Sidebar dragon={dragon} onSettings={() => setShowSettings(true)} isOpen={isSidebarOpen} />
 
         <main className="main">
           <Routes>
@@ -145,6 +154,7 @@ export default function App() {
       <GameProvider>
         <TaskProvider>
           <IELTSProvider>
+            <DevWarning />
             <BrowserRouter>
               <AppContent />
             </BrowserRouter>

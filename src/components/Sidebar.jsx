@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { DRAGONS } from '../data/constants';
 import { useSettings } from '../context/SettingsContext';
 
-export default function Sidebar({ dragon, onSettings }) {
+export default function Sidebar({ dragon, onSettings, isOpen }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, toggleTheme } = useSettings();
@@ -22,7 +22,7 @@ export default function Sidebar({ dragon, onSettings }) {
     ];
 
     return (
-        <nav className="sb">
+        <nav className={`sb${isOpen ? " open" : ""}`}>
             <div className="sb-logo">
                 <div className="sb-logo-main">NEXUS</div>
                 <div className="sb-logo-sub">AI Life Secretary</div>
