@@ -29,7 +29,7 @@ function AppContent() {
   const activePage = location.pathname.substring(1) || 'dashboard';
 
   const { showSettings, setShowSettings, showOnboarding, setShowOnboarding, resetGame, gcal, updateGcal } = useSettings();
-  const { dragon, stats, health, addXP, updateHealth, defeatMonster } = useGame();
+  const { dragon, stats, health, addXP, updateHealth, defeatMonster, levelUp, setLevelUp } = useGame();
   const { tasks, analyzing, showCheckIn, setShowCheckIn, endDay, showToast, toast, completeTask, addTask, editTask, deleteTask, gcalPushing, onGcalPush } = useTasks();
 
   const [focusTask, setFocusTask] = useState(null);
@@ -58,8 +58,7 @@ function AppContent() {
     return <OnboardingPage onComplete={() => setShowOnboarding(false)} />;
   }
 
-  // Handle Level Up Overlay
-  const { levelUp, setLevelUp } = useGame();
+
 
   return (
     <>

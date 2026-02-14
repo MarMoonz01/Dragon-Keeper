@@ -65,7 +65,7 @@ export default function EssayWriter() {
                     <button className={"btn " + (writingTask === 1 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(1)}>Task 1 (Report)</button>
                     <button className={"btn " + (writingTask === 2 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(2)}>Task 2 (Essay)</button>
                 </div>
-                <div className="ct">✍️ AI Writing Evaluator (Gemini 1.5 Pro)</div>
+                <div className="ct">✍️ AI Writing Evaluator</div>
                 <div className="ins" style={{ marginBottom: 14 }}>
                     <span className="ins-ic">📋</span>
                     <span>
@@ -83,7 +83,7 @@ export default function EssayWriter() {
                         {scoring ? "🤖 Scoring..." : "🤖 AI Score Essay"}
                     </button>
                 </div>
-                {scoring && <div style={{ marginTop: 12 }}><Loader text="Gemini is evaluating your essay..." /></div>}
+                {scoring && <div style={{ marginTop: 12 }}><Loader text="AI is evaluating your essay..." /></div>}
                 {scores && !scoring && (
                     <div style={{ marginTop: 16 }}>
                         <div style={{ textAlign: "center", marginBottom: 14 }}>
