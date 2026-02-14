@@ -1,9 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { MONSTERS } from '../data/constants';
 
 export default function BattleMode({ tasks, defeated, onDefeat }) {
     const mi = Math.min(Math.floor(defeated / 2), MONSTERS.length - 1);
     const M = MONSTERS[mi];
+    const monRef = useRef(M);
+    monRef.current = M;
+
     const [mhp, setMhp] = useState(M.maxHp);
     const [dhp, setDhp] = useState(100);
     const [log, setLog] = useState(["⚔️ Battle begins! Complete tasks to attack!"]);
@@ -11,26 +14,29 @@ export default function BattleMode({ tasks, defeated, onDefeat }) {
     const [won, setWon] = useState(false);
     const [lost, setLost] = useState(false);
     const addLog = msg => setLog(l => [msg, ...l].slice(0, 10));
+
     const attack = t => {
         if (won || lost) return;
         const dmg = t.hp || 20;
         setMhp(prev => {
             const nx = Math.max(0, prev - dmg);
-            if (nx <= 0) { setWon(true); addLog("🎉 " + M.name + " defeated! +" + M.reward + " XP!"); setTimeout(() => onDefeat(M.reward), 600); }
+            if (nx <= 0) { setWon(true); addLog("🎉 " + monRef.current.name + " defeated! +" + monRef.current.reward + " XP!"); setTimeout(() => onDefeat(monRef.current.reward), 600); }
             return nx;
         });
         setShaking(true); setTimeout(() => setShaking(false), 350);
         addLog("⚡ " + t.name.substring(0, 22) + " deals " + dmg + " dmg!");
     };
+
     useEffect(() => {
         if (won || lost) return;
         const t = setInterval(() => {
             const dmg = Math.floor(Math.random() * 12) + 4;
             setDhp(p => { const nx = Math.max(0, p - dmg); if (nx <= 0) setLost(true); return nx; });
-            addLog("💥 " + M.name + " attacks for " + dmg + "!");
+            addLog("💥 " + monRef.current.name + " attacks for " + dmg + "!");
         }, 7000);
         return () => clearInterval(t);
     }, [won, lost]);
+
     const doneTasks = tasks.filter(t => t.done);
     return (
         <div className="battle">

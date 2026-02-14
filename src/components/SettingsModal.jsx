@@ -8,26 +8,25 @@ export default function SettingsModal({ onClose, onReset }) {
     const [initialSupabase, setInitialSupabase] = useState({ url: "", key: "" });
 
     useEffect(() => {
-        load("nx-settings").then(s => {
-            if (s) {
-                setProvider(s.provider || "claude");
-                const k = {
-                    claudeKey: s.claudeKey || "",
-                    openaiKey: s.openaiKey || "",
-                    geminiKey: s.geminiKey || "",
-                    supabaseUrl: s.supabaseUrl || "",
-                    supabaseKey: s.supabaseKey || ""
-                };
-                setKeys(k);
-                setInitialSupabase({ url: k.supabaseUrl, key: k.supabaseKey });
-                setGoals({
-                    ieltsTarget: s.ieltsTarget || "7.5",
-                    studyHours: s.studyHours || "3",
-                    targetSleep: s.targetSleep || "8",
-                    exerciseDays: s.exerciseDays || "5"
-                });
-            }
-        });
+        const s = load("nx-settings");
+        if (s) {
+            setProvider(s.provider || "claude");
+            const k = {
+                claudeKey: s.claudeKey || "",
+                openaiKey: s.openaiKey || "",
+                geminiKey: s.geminiKey || "",
+                supabaseUrl: s.supabaseUrl || "",
+                supabaseKey: s.supabaseKey || ""
+            };
+            setKeys(k);
+            setInitialSupabase({ url: k.supabaseUrl, key: k.supabaseKey });
+            setGoals({
+                ieltsTarget: s.ieltsTarget || "7.5",
+                studyHours: s.studyHours || "3",
+                targetSleep: s.targetSleep || "8",
+                exerciseDays: s.exerciseDays || "5"
+            });
+        }
     }, []);
 
     const handleSave = () => {

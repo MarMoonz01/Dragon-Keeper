@@ -10,12 +10,10 @@ export default function HealthPage({ health, onSave }) {
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", exerciseDays: "5", studyHours: "3", targetSleep: "8" });
 
     useEffect(() => {
-        load("nx-health-history").then(h => {
-            if (h && Array.isArray(h)) setWeeklyHealth(h);
-        });
-        load("nx-settings").then(s => {
-            if (s) setGoals(g => ({ ...g, ieltsTarget: s.ieltsTarget || g.ieltsTarget, exerciseDays: s.exerciseDays || g.exerciseDays, studyHours: s.studyHours || g.studyHours, targetSleep: s.targetSleep || g.targetSleep }));
-        });
+        const h = load("nx-health-history");
+        if (h && Array.isArray(h)) setWeeklyHealth(h);
+        const s = load("nx-settings");
+        if (s) setGoals(g => ({ ...g, ieltsTarget: s.ieltsTarget || g.ieltsTarget, exerciseDays: s.exerciseDays || g.exerciseDays, studyHours: s.studyHours || g.studyHours, targetSleep: s.targetSleep || g.targetSleep }));
     }, []);
 
     const handleSave = () => {

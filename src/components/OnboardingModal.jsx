@@ -1,95 +1,267 @@
 import React, { useState } from 'react';
 import { load, save } from '../utils/helpers';
 
-export default function OnboardingModal({ onComplete }) {
+const GOAL_OPTIONS = [
+    { id: "ielts", ic: "📚", label: "IELTS Preparation" },
+    { id: "health", ic: "💪", label: "Health & Fitness" },
+    { id: "productivity", ic: "🚀", label: "Work Productivity" },
+    { id: "habits", ic: "🔄", label: "Build New Habits" },
+    { id: "study", ic: "🎓", label: "Academic Study" },
+    { id: "mindfulness", ic: "🧘", label: "Mindfulness & Balance" }
+];
+
+const STATUS_OPTIONS = [
+    { id: "student_hs", label: "High School Student" },
+    { id: "student_uni", label: "University Student" },
+    { id: "working_ft", label: "Full-time Worker" },
+    { id: "working_pt", label: "Part-time Worker" },
+    { id: "freelancer", label: "Freelancer" },
+    { id: "gap_year", label: "Gap Year / Unemployed" }
+];
+
+export default function OnboardingPage({ onComplete }) {
     const [step, setStep] = useState(0);
+
+    // Profile data
+    const [name, setName] = useState("");
+    const [age, setAge] = useState("");
+    const [status, setStatus] = useState("");
+    const [goals, setGoals] = useState([]);
+    const [wakeTime, setWakeTime] = useState("07:00");
+    const [sleepTime, setSleepTime] = useState("23:00");
+    const [freeSlots, setFreeSlots] = useState("afternoon");
+    const [currentBand, setCurrentBand] = useState("");
+    const [exerciseDays, setExerciseDays] = useState("3");
+
+    // Settings data
     const [apiKey, setApiKey] = useState("");
     const [target, setTarget] = useState("7.5");
 
+    const toggleGoal = (id) => setGoals(prev => prev.includes(id) ? prev.filter(g => g !== id) : [...prev, id]);
+
     const finish = () => {
-        if (apiKey) {
-            load("nx-settings").then(s => {
-                const settings = s || {};
-                settings.claudeKey = apiKey;
-                settings.ieltsTarget = target;
-                save("nx-settings", settings);
-            });
-        }
+        const profile = {
+            name, age: +age, status, goals, wakeTime, sleepTime, freeSlots,
+            currentBand: currentBand || null,
+            exerciseDays: +exerciseDays,
+            createdAt: new Date().toISOString()
+        };
+        save("nx-profile", profile);
+
+        const s = load("nx-settings") || {};
+        if (apiKey) s.claudeKey = apiKey;
+        s.ieltsTarget = target;
+        s.studyHours = goals.includes("ielts") ? "4" : "2";
+        s.targetSleep = sleepTime <= "22:00" ? "8" : "7";
+        s.exerciseDays = exerciseDays;
+        save("nx-settings", s);
+
         save("nx-onboarded", true);
         onComplete();
     };
 
+    const chipStyle = (active) => ({
+        padding: "10px 16px", borderRadius: 12, fontSize: 13, fontWeight: 600, cursor: "pointer",
+        border: active ? "2px solid var(--teal)" : "1px solid var(--bdr)",
+        background: active ? "rgba(0,221,179,.1)" : "var(--card2)",
+        color: active ? "var(--teal)" : "var(--t2)",
+        transition: "all .2s"
+    });
+
     const steps = [
         // Step 0: Welcome
         <div key={0} style={{ textAlign: "center" }}>
-            <div style={{ fontSize: 60, marginBottom: 16 }}>🐉</div>
-            <div style={{ fontFamily: "'Cinzel Decorative',serif", fontSize: 20, color: "var(--gold)", marginBottom: 8 }}>Welcome to NEXUS</div>
-            <div style={{ fontSize: 13, color: "var(--t2)", lineHeight: 1.8, marginBottom: 20 }}>
-                Your AI Life Secretary — combining IELTS prep, health tracking, and gamification into one powerful system.
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, textAlign: "left", marginBottom: 20 }}>
+            <div className="ob-dragon-float">🐉</div>
+            <div className="ob-brand">NEXUS</div>
+            <div className="ob-subtitle">Your AI Life Operating System</div>
+            <div className="ob-tagline">IELTS prep · Health tracking · Gamification · AI planning — all in one place.</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, textAlign: "left", marginTop: 32 }}>
                 {[
-                    { ic: "📊", t: "AI Dashboard", d: "Daily briefings & schedule" },
+                    { ic: "📊", t: "AI Dashboard", d: "Daily briefings & smart schedule" },
                     { ic: "📚", t: "IELTS Tracker", d: "Scores, essays, flashcards" },
-                    { ic: "🐉", t: "Dragon Hatchery", d: "Gamified progression" },
-                    { ic: "❤️", t: "Health Monitor", d: "Sleep, steps, hydration" }
+                    { ic: "🐉", t: "Dragon Hatchery", d: "Gamified progression system" },
+                    { ic: "🗺️", t: "World Map", d: "Quest milestones & deadlines" }
                 ].map((f, i) => (
-                    <div key={i} style={{ background: "var(--card2)", borderRadius: 10, padding: 12, border: "1px solid var(--bdr)" }}>
-                        <div style={{ fontSize: 20 }}>{f.ic}</div>
-                        <div style={{ fontWeight: 700, fontSize: 12, marginTop: 4 }}>{f.t}</div>
-                        <div style={{ fontSize: 10, color: "var(--t3)" }}>{f.d}</div>
+                    <div key={i} className="ob-feature-card">
+                        <div style={{ fontSize: 24 }}>{f.ic}</div>
+                        <div style={{ fontWeight: 700, fontSize: 13, marginTop: 6 }}>{f.t}</div>
+                        <div style={{ fontSize: 11, color: "var(--t3)", marginTop: 3 }}>{f.d}</div>
                     </div>
                 ))}
             </div>
         </div>,
-        // Step 1: API Key
+
+        // Step 1: Identity
         <div key={1}>
-            <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🔑</div>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Connect AI Provider</div>
-                <div style={{ fontSize: 12, color: "var(--t2)" }}>An API key powers AI briefings, schedule generation, and IELTS scoring.</div>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>👤</div>
+                <div className="ob-step-title">Who Are You?</div>
+                <div className="ob-step-desc">Help NEXUS understand your situation for smarter AI planning.</div>
             </div>
-            <div className="fr">
-                <label>Claude API Key (Anthropic)</label>
-                <input className="inp" type="password" placeholder="sk-ant-..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
-                <div style={{ fontSize: 10, color: "var(--t3)", marginTop: 4 }}>You can change this later in Settings. The app works without it, but AI features will be disabled.</div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div className="fr">
+                    <label>What should we call you?</label>
+                    <input className="inp ob-inp" placeholder="Your name" value={name} onChange={e => setName(e.target.value)} />
+                </div>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                    <div className="fr">
+                        <label>Age</label>
+                        <input className="inp ob-inp" type="number" min={10} max={80} placeholder="25" value={age} onChange={e => setAge(e.target.value)} />
+                    </div>
+                    <div className="fr">
+                        <label>Status</label>
+                        <select className="inp ob-inp" value={status} onChange={e => setStatus(e.target.value)}>
+                            <option value="">Select...</option>
+                            {STATUS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                        </select>
+                    </div>
+                </div>
             </div>
         </div>,
-        // Step 2: IELTS Target
+
+        // Step 2: Goals
         <div key={2}>
-            <div style={{ textAlign: "center", marginBottom: 16 }}>
-                <div style={{ fontSize: 40, marginBottom: 8 }}>🎯</div>
-                <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 4 }}>Set Your Goal</div>
-                <div style={{ fontSize: 12, color: "var(--t2)" }}>What IELTS band score are you targeting?</div>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>🎯</div>
+                <div className="ob-step-title">What brings you here?</div>
+                <div className="ob-step-desc">Select all that apply — this shapes your dashboard experience.</div>
             </div>
-            <div style={{ display: "flex", gap: 8, justifyContent: "center", marginBottom: 20 }}>
-                {["6.5", "7.0", "7.5", "8.0", "8.5"].map(b => (
-                    <button key={b} className={"btn " + (target === b ? "btn-g" : "btn-gh")} style={{ padding: "12px 16px", fontSize: 14, fontWeight: 700 }} onClick={() => setTarget(b)}>
-                        {b}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 20 }}>
+                {GOAL_OPTIONS.map(g => (
+                    <button key={g.id} style={chipStyle(goals.includes(g.id))} onClick={() => toggleGoal(g.id)}>
+                        <span style={{ marginRight: 8 }}>{g.ic}</span>{g.label}
                     </button>
                 ))}
             </div>
-            <div style={{ textAlign: "center", fontSize: 12, color: "var(--t2)" }}>
-                AI will tailor your study plans and analysis to reach Band {target}.
+
+            {goals.includes("ielts") && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginTop: 8 }}>
+                    <div className="fr">
+                        <label>Current IELTS Band</label>
+                        <select className="inp ob-inp" value={currentBand} onChange={e => setCurrentBand(e.target.value)}>
+                            <option value="">Haven't taken</option>
+                            {["4.0", "4.5", "5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0"].map(b => <option key={b} value={b}>{b}</option>)}
+                        </select>
+                    </div>
+                    <div className="fr">
+                        <label>Target Band</label>
+                        <div style={{ display: "flex", gap: 4 }}>
+                            {["6.5", "7.0", "7.5", "8.0", "8.5"].map(b => (
+                                <button key={b} className={"btn btn-sm " + (target === b ? "btn-g" : "btn-gh")}
+                                    style={{ flex: 1, padding: "8px 0", fontSize: 12, fontWeight: 700 }}
+                                    onClick={() => setTarget(b)}>{b}</button>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {goals.includes("health") && (
+                <div className="fr" style={{ marginTop: 8 }}>
+                    <label>Days/week you exercise currently?</label>
+                    <div style={{ display: "flex", gap: 4 }}>
+                        {["0", "1", "2", "3", "4", "5", "6", "7"].map(d => (
+                            <button key={d} className={"btn btn-sm " + (exerciseDays === d ? "btn-g" : "btn-gh")}
+                                style={{ flex: 1, padding: "8px 0", fontSize: 13, fontWeight: 700 }}
+                                onClick={() => setExerciseDays(d)}>{d}</button>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>,
+
+        // Step 3: Lifestyle
+        <div key={3}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>🕐</div>
+                <div className="ob-step-title">Your Daily Rhythm</div>
+                <div className="ob-step-desc">So AI won't schedule tasks while you're sleeping.</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                <div className="fr">
+                    <label>⏰ Wake Up</label>
+                    <input className="inp ob-inp" type="time" value={wakeTime} onChange={e => setWakeTime(e.target.value)} />
+                </div>
+                <div className="fr">
+                    <label>🌙 Bedtime</label>
+                    <input className="inp ob-inp" type="time" value={sleepTime} onChange={e => setSleepTime(e.target.value)} />
+                </div>
+            </div>
+            <div className="fr">
+                <label>When is your most productive free time?</label>
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {[
+                        { id: "morning", ic: "🌅", label: "Morning (6-12)" },
+                        { id: "afternoon", ic: "☀️", label: "Afternoon (12-17)" },
+                        { id: "evening", ic: "🌆", label: "Evening (17-21)" },
+                        { id: "night", ic: "🌙", label: "Night (21+)" }
+                    ].map(s => (
+                        <button key={s.id} style={chipStyle(freeSlots === s.id)} onClick={() => setFreeSlots(s.id)}>
+                            <span style={{ marginRight: 6 }}>{s.ic}</span>{s.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+        </div>,
+
+        // Step 4: API Key + Summary
+        <div key={4}>
+            <div style={{ textAlign: "center", marginBottom: 24 }}>
+                <div style={{ fontSize: 48, marginBottom: 8 }}>🔑</div>
+                <div className="ob-step-title">Power Up with AI</div>
+                <div className="ob-step-desc">An API key enables daily briefings, smart scheduling, and IELTS scoring.</div>
+            </div>
+            <div className="fr" style={{ marginBottom: 20 }}>
+                <label>Claude API Key (Anthropic)</label>
+                <input className="inp ob-inp" type="password" placeholder="sk-ant-..." value={apiKey} onChange={e => setApiKey(e.target.value)} />
+                <div style={{ fontSize: 10, color: "var(--t3)", marginTop: 4 }}>You can change this later in Settings. The app works without it, but AI features will be disabled.</div>
+            </div>
+
+            {/* Profile summary card */}
+            <div className="ob-summary">
+                <div style={{ fontSize: 13, fontWeight: 700, color: "var(--teal)", marginBottom: 10 }}>✨ Your NEXUS Profile</div>
+                <div className="ob-summary-grid">
+                    {name && <div>👤 {name}{age ? `, ${age}` : ""}</div>}
+                    {status && <div>💼 {STATUS_OPTIONS.find(s => s.id === status)?.label}</div>}
+                    {goals.length > 0 && <div>🎯 {goals.map(g => GOAL_OPTIONS.find(o => o.id === g)?.label).join(", ")}</div>}
+                    <div>⏰ {wakeTime} → {sleepTime}</div>
+                    {goals.includes("ielts") && <div>📚 IELTS: {currentBand || "—"} → {target}</div>}
+                    <div>🌤️ Free time: {freeSlots}</div>
+                </div>
             </div>
         </div>
     ];
 
     return (
-        <div className="mo">
-            <div className="mc" style={{ maxWidth: 480 }}>
-                <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 20 }}>
+        <div className="ob-page">
+            {/* Decorative background */}
+            <div className="ob-bg" />
+
+            <div className="ob-container">
+                {/* Progress bar */}
+                <div className="ob-progress">
                     {steps.map((_, i) => (
-                        <div key={i} style={{ width: 40, height: 3, borderRadius: 3, background: i <= step ? "var(--teal)" : "var(--bdr)" }} />
+                        <div key={i} className="ob-progress-segment">
+                            <div className={`ob-progress-fill${i <= step ? " active" : ""}`} />
+                        </div>
                     ))}
+                    <div className="ob-progress-label">Step {step + 1} of {steps.length}</div>
                 </div>
-                {steps[step]}
-                <div className="mac">
-                    {step > 0 && <button className="btn btn-gh" onClick={() => setStep(s => s - 1)}>← Back</button>}
+
+                {/* Content */}
+                <div className="ob-content">
+                    {steps[step]}
+                </div>
+
+                {/* Navigation */}
+                <div className="ob-nav">
+                    {step > 0 ? (
+                        <button className="btn btn-gh ob-btn" onClick={() => setStep(s => s - 1)}>← Back</button>
+                    ) : <div />}
                     {step < steps.length - 1 ? (
-                        <button className="btn btn-g" onClick={() => setStep(s => s + 1)}>Continue →</button>
+                        <button className="btn btn-g ob-btn" onClick={() => setStep(s => s + 1)}>Continue →</button>
                     ) : (
-                        <button className="btn btn-g" onClick={finish}>🚀 Launch NEXUS</button>
+                        <button className="btn btn-g ob-btn ob-launch" onClick={finish}>🚀 Launch NEXUS</button>
                     )}
                 </div>
             </div>

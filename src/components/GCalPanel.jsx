@@ -12,34 +12,21 @@ export default function GCalPanel({ gcal, onConnect, onPush, pushing }) {
 
     return (
         <div className="card">
-            <div className="ct">📅 Google Calendar</div>
-            <div className="gcal-s">
-                <div className={"gcal-dot" + (gcal.connected ? " conn" : " dc")} />
-                <div className="gcal-info">
-                    <div className="gcal-nm">{gcal.connected ? "Connected — syncing active" : "Not Connected"}</div>
-                    <div className="gcal-sub">{gcal.connected ? "Last sync: " + (gcal.lastSync || "now") : "Connect to auto-sync your schedule"}</div>
-                </div>
-                {!gcal.connected && <button className="btn btn-t btn-sm" onClick={onConnect}>Connect</button>}
+            <div className="ct" style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                📅 Google Calendar
+                <span style={{ fontSize: 9, fontWeight: 700, background: "rgba(167,139,250,.2)", color: "var(--violet)", padding: "2px 8px", borderRadius: 20, letterSpacing: 1 }}>COMING SOON</span>
             </div>
-            {gcal.connected ? (
-                <>
-                    <div style={{ display: "flex", gap: 8 }}>
-                        <button className="btn btn-g btn-sm" onClick={onPush} disabled={pushing} style={{ flex: 1 }}>{pushing ? "⏳ Syncing..." : "📤 Push Tasks"}</button>
-                        <button className="btn btn-gh btn-sm" style={{ flex: 1 }} onClick={() => setShowNotice(true)}>📥 Import</button>
-                    </div>
-                    {showNotice && (
-                        <div className="ins" style={{ marginTop: 8, background: "rgba(167,139,250,.1)", border: "1px solid rgba(167,139,250,.25)", borderRadius: 10, animation: "fadeIn .3s" }}>
-                            <span className="ins-ic">ℹ️</span>
-                            <span>Google Calendar import requires OAuth setup. See <strong>Settings</strong> for details.</span>
-                        </div>
-                    )}
-                </>
-            ) : (
-                <div className="ins" style={{ marginTop: 8 }}>
-                    <span className="ins-ic">ℹ️</span>
-                    <span>To enable real Google Calendar sync, add your OAuth 2.0 Client ID to the code and host on HTTPS.</span>
+            <div className="gcal-s">
+                <div className={"gcal-dot dc"} />
+                <div className="gcal-info">
+                    <div className="gcal-nm">Google Calendar Integration</div>
+                    <div className="gcal-sub">OAuth 2.0 integration is under development</div>
                 </div>
-            )}
+            </div>
+            <div className="ins" style={{ marginTop: 8, background: "rgba(167,139,250,.06)", border: "1px solid rgba(167,139,250,.15)" }}>
+                <span className="ins-ic">🚧</span>
+                <span>Auto-sync with Google Calendar is coming in a future update. Tasks will be pushed to your calendar automatically once OAuth 2.0 is configured.</span>
+            </div>
         </div>
     );
 }

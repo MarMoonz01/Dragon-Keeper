@@ -7,6 +7,7 @@ export default function Sidebar({ page, setPage, dragon, onSettings }) {
         { id: "dashboard", ic: "⚡", label: "Dashboard" },
         { id: "analysis", ic: "📊", label: "Analysis" },
         { id: "hatchery", ic: "🐉", label: "Hatchery" },
+        { id: "worldmap", ic: "🗺️", label: "World Map" },
         { id: "ielts", ic: "📚", label: "IELTS Tracker" },
         { id: "health", ic: "❤️", label: "Health" },
     ];

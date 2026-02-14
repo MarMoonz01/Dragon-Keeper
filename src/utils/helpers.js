@@ -1,5 +1,5 @@
-export const load = async (k) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; } };
-export const save = async (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } };
+export const load = (k) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; } };
+export const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } };
 
 export class AIError extends Error {
     constructor(message) {
@@ -9,7 +9,7 @@ export class AIError extends Error {
 }
 
 export async function ai(messages, sys) {
-    const settings = await load("nx-settings") || {};
+    const settings = load("nx-settings") || {};
     const provider = settings.provider || "claude";
     const key = settings[provider + "Key"];
 

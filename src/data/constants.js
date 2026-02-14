@@ -57,3 +57,50 @@ export const TOPICS = [
 export const WL = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 export const WD = [0, 0, 0, 0, 0, 0, 0];
 export const CC = { health: "#34d399", work: "#00ddb3", ielts: "#a78bfa", mind: "#f0c040", social: "#ff5e87" };
+
+export const ZONES = [
+    { id: "scholar", name: "Scholar's Kingdom", ic: "📚", color: "#a78bfa", desc: "IELTS mastery path", goalLabel: "IELTS Exam Date" },
+    { id: "iron", name: "Iron Citadel", ic: "🏋️", color: "#34d399", desc: "Health & fitness", goalLabel: "Fitness Goal Date" },
+    { id: "dragon", name: "Dragon's Lair", ic: "⚔️", color: "#fb7185", desc: "Battle challenges", goalLabel: "Battle Mastery Date" },
+    { id: "mindful", name: "Mindful Peaks", ic: "🧘", color: "#fccb58", desc: "Mind & meditation", goalLabel: "Mindfulness Goal Date" }
+];
+
+// Milestones are ordered bottom-to-top. Positions auto-calculated.
+// weight determines % of time allocated to reach this milestone.
+export const ZONE_MILESTONES = {
+    scholar: [
+        { key: "start", em: "🌅", title: "Diagnostic Test", desc: "Take a full practice test to find your baseline.", type: "normal", reward: 30, weight: 1 },
+        { key: "vocab", em: "🏕️", title: "Vocabulary Foundation", desc: "Learn 200 core IELTS words. Daily vocab drills.", type: "normal", reward: 50, weight: 2 },
+        { key: "grammar", em: "🌉", title: "Grammar Bridge", desc: "Master complex sentences and linking phrases.", type: "normal", reward: 60, weight: 2 },
+        { key: "reading", em: "📖", title: "Reading Fortress", desc: "Speed reading, T/F/NG, matching headings.", type: "normal", reward: 70, weight: 2 },
+        { key: "listen", em: "🎧", title: "Listening Cavern", desc: "Section 3 & 4 strategies. Note completion.", type: "normal", reward: 70, weight: 2 },
+        { key: "mock1", em: "🏰", title: "Mid-Point Mock", desc: "Full mock test. Are you on track?", type: "boss", reward: 150, weight: 1 },
+        { key: "writing", em: "🌋", title: "Writing Volcano", desc: "Task 1 & 2: argument structure, vocabulary range.", type: "normal", reward: 90, weight: 2 },
+        { key: "speak", em: "🏛️", title: "Speaking Temple", desc: "Part 2 monologues, Part 3 deep discussions.", type: "normal", reward: 90, weight: 2 },
+        { key: "review", em: "⚡", title: "Final Review", desc: "Full review of weak areas. Timed practice.", type: "normal", reward: 80, weight: 1 },
+        { key: "summit", em: "🏔️", title: "Summit — Exam Day", desc: "You're ready. Conquer the exam!", type: "boss", reward: 300, weight: 1 },
+    ],
+    iron: [
+        { key: "start", em: "🏃", title: "First Steps", desc: "Log your baseline health metrics.", type: "normal", reward: 30, weight: 1 },
+        { key: "water", em: "💧", title: "Hydration Habit", desc: "Drink 2L water daily for 7 days.", type: "normal", reward: 60, weight: 2 },
+        { key: "sleep", em: "💤", title: "Sleep Discipline", desc: "8hrs sleep for 14 consecutive nights.", type: "normal", reward: 60, weight: 2 },
+        { key: "cardio", em: "👟", title: "Cardio Foundation", desc: "30-min cardio 5 days/week for 2 weeks.", type: "normal", reward: 80, weight: 2 },
+        { key: "mid", em: "🏋️", title: "Strength Check", desc: "Hit strength benchmarks. Mid-point assessment.", type: "boss", reward: 150, weight: 1 },
+        { key: "endure", em: "🔥", title: "Endurance Phase", desc: "Increase intensity. Push your limits.", type: "normal", reward: 100, weight: 2 },
+        { key: "peak", em: "🏆", title: "Peak Performance", desc: "Achieve your fitness goal!", type: "boss", reward: 300, weight: 1 },
+    ],
+    dragon: [
+        { key: "start", em: "⚔️", title: "Arena Gate", desc: "Win your first battle.", type: "normal", reward: 30, weight: 1 },
+        { key: "goblin", em: "👺", title: "Goblin Slayer", desc: "Defeat 5 Procrastination Goblins.", type: "normal", reward: 60, weight: 2 },
+        { key: "wraith", em: "👻", title: "Wraith Hunter", desc: "Defeat 3 Fatigue Wraiths consecutively.", type: "normal", reward: 80, weight: 2 },
+        { key: "demon", em: "😈", title: "Demon Throne", desc: "Face the Distraction Demon. 3 consecutive wins.", type: "boss", reward: 200, weight: 2 },
+        { key: "dragon", em: "🐉", title: "Dragon's Heart", desc: "The final boss. Defeat the Burnout Dragon!", type: "boss", reward: 400, weight: 1 },
+    ],
+    mindful: [
+        { key: "start", em: "🌸", title: "Zen Garden", desc: "Complete your first mindfulness session.", type: "normal", reward: 30, weight: 1 },
+        { key: "med7", em: "🧘", title: "7-Day Meditation", desc: "Meditate every day for a week.", type: "normal", reward: 70, weight: 2 },
+        { key: "journal", em: "📝", title: "Reflection Practice", desc: "Journal daily for 14 days.", type: "normal", reward: 80, weight: 2 },
+        { key: "deep", em: "🌊", title: "Deep Practice", desc: "20-min sessions. Breath work + body scan.", type: "normal", reward: 90, weight: 2 },
+        { key: "peak", em: "✨", title: "Enlightenment", desc: "21-day meditation streak. Inner peace.", type: "boss", reward: 250, weight: 1 },
+    ]
+};

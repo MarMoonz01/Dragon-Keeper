@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function MiniCal({ hi = [] }) {
+const MiniCal = React.memo(function MiniCal({ hi = [] }) {
     const n = new Date(), y = n.getFullYear(), m = n.getMonth();
     const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), dip = new Date(y, m, 0).getDate();
     const MN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -19,4 +19,6 @@ export default function MiniCal({ hi = [] }) {
             </div>
         </div>
     );
-}
+});
+
+export default MiniCal;

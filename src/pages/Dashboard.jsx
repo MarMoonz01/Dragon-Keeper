@@ -27,13 +27,13 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
 
     useEffect(() => {
         const key = "brief_" + new Date().toDateString() + "_lv" + dragon.level + "_s" + streak;
-        load(key).then(c => {
-            if (c) { setBriefing(c); return; }
+        const c = load(key);
+        if (c) { setBriefing(c); } else {
             setBriefLoading(true);
             ai([{ role: "user", content: "Daily briefing: IELTS target 7.5 (current 6.5), healthy habits. " + new Date().toDateString() + ". Dragon Lv." + dragon.level + ", streak " + streak + " days. Give: 1 key priority, 1 IELTS tip, 1 motivational line. Max 90 words." }])
                 .then(r => { setBriefing(r); save(key, r); setBriefLoading(false); })
                 .catch(() => setBriefLoading(false));
-        });
+        }
 
         if (supabase) {
             fetchWeeklyHistory();

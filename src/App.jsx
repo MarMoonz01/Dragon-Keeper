@@ -5,10 +5,11 @@ import Dashboard from './pages/Dashboard';
 import DailyCheckInModal from './components/DailyCheckInModal';
 import AnalysisPage from './pages/AnalysisPage';
 import HatcheryPage from './pages/HatcheryPage';
+import WorldMapPage from './pages/WorldMapPage';
 import IELTSPage from './pages/IELTSPage';
 import HealthPage from './pages/HealthPage';
 import ErrorBoundary from './components/ErrorBoundary';
-import OnboardingModal from './components/OnboardingModal';
+import OnboardingPage from './components/OnboardingModal';
 import NotificationManager from './components/NotificationManager';
 import { TASKS0, DRAGONS } from './data/constants';
 import { load, save, ai } from './utils/helpers';
@@ -34,27 +35,36 @@ export default function App() {
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    load("nx-dragon").then(d => setDragon(d || { xp: 0, level: 1 }));
-    load("nx-stats").then(d => setStats(d || { monstersDefeated: 0, streak: 0, healthScore: 0 }));
-    load("nx-health").then(d => setHealth(d || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 }));
-    load("nx-gcal").then(d => d && setGcal(d));
-    load("nx-onboarded").then(d => { if (!d) setShowOnboarding(true); });
+    setDragon(load("nx-dragon") || { xp: 0, level: 1 });
+    setStats(load("nx-stats") || { monstersDefeated: 0, streak: 0, healthScore: 0 });
+    setHealth(load("nx-health") || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 });
+    const g = load("nx-gcal"); if (g) setGcal(g);
+    if (!load("nx-onboarded")) setShowOnboarding(true);
 
     // Supabase check with try/catch safety
     if (supabase) {
       fetchDailyPlan().catch(e => console.error("Fetch plan failed:", e));
-      calculateStreak();
     } else {
-      load("nx-tasks").then(d => setTasks(d || TASKS0));
+      setTasks(load("nx-tasks") || TASKS0);
     }
+    // Always calculate streak (works with Supabase or localStorage)
+    calculateStreak();
   }, []);
 
   const fetchDailyPlan = async () => {
     const today = new Date().toISOString().split('T')[0];
     const { data, error } = await supabase.from('daily_plans').select('*').eq('date', today).single();
     if (data) {
-      setTasks(data.tasks);
-      setDailyPlan(data);
+      // Check if plan was created before 4am — if so, regenerate
+      const planCreatedAt = new Date(data.created_at);
+      const today4am = new Date();
+      today4am.setHours(4, 0, 0, 0);
+      if (planCreatedAt < today4am) {
+        generateDailyPlan(); // Stale plan from before dawn
+      } else {
+        setTasks(data.tasks);
+        setDailyPlan(data);
+      }
     } else {
       generateDailyPlan();
     }
@@ -65,15 +75,25 @@ export default function App() {
       // 1. Get yesterday's summary for context
       const { data: history } = await supabase.from('daily_summaries').select('*').order('date', { ascending: false }).limit(1).single();
 
-      // 2. AI-powered plan generation
+      // 2. Load user profile for personalization
+      const profile = load("nx-profile");
+      const profileCtx = profile
+        ? `User: ${profile.name || "User"}${profile.age ? `, age ${profile.age}` : ""}${profile.status ? `, ${profile.status.replace(/_/g, " ")}` : ""}. Goals: ${(profile.goals || []).join(", ") || "general"}. Wake: ${profile.wakeTime || "07:00"}, Sleep: ${profile.sleepTime || "23:00"}. Free time: ${profile.freeSlots || "afternoon"}.${profile.currentBand ? ` Current IELTS: ${profile.currentBand}.` : ""}`
+        : "No profile set.";
+
+      // 3. AI-powered plan generation
       const context = history
         ? `Yesterday: ${history.summary || 'No summary'}. Mood: ${history.mood || 'Unknown'}. Score: ${history.productivity_score || 0}%. Completed: ${(history.completed_tasks || []).map(t => t.name).join(', ') || 'none'}.`
         : 'First day — no history yet.';
 
-      const prompt = `Generate today's daily plan. Context: ${context}
+      const wakeH = profile?.wakeTime ? parseInt(profile.wakeTime.split(':')[0]) : 7;
+      const sleepH = profile?.sleepTime ? parseInt(profile.sleepTime.split(':')[0]) : 23;
+
+      const prompt = `Generate today's daily plan. ${profileCtx}
+Context: ${context}
 Create exactly 10 tasks as a JSON array. Each task must have:
-- id (number 1-10), name (string), time (HH:MM), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
-Front-load IELTS before noon. Include health, work, and mindfulness tasks. Mix categories.
+- id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
+Schedule tasks ONLY between ${String(wakeH).padStart(2, "0")}:00-${String(sleepH).padStart(2, "0")}:00. ${profile?.goals?.includes("ielts") ? "Front-load IELTS before noon." : ""} Include health, work, and mindfulness tasks. Mix categories.
 Respond with ONLY the JSON array, no explanation.`;
 
       const res = await ai([{ role: "user", content: prompt }], "You are NEXUS AI Life Secretary. Generate practical, balanced daily schedules in JSON format.");
@@ -103,34 +123,49 @@ Respond with ONLY the JSON array, no explanation.`;
       }
 
       // 3. Save to DB
-      const { error } = await supabase.from('daily_plans').insert([{ date: new Date().toISOString().split('T')[0], tasks: newTasks }]);
-      if (!error) {
-        setTasks(newTasks);
-      } else {
-        setTasks(TASKS0);
+      const { error } = await supabase.from('daily_plans').upsert([{ date: new Date().toISOString().split('T')[0], tasks: newTasks }], { onConflict: 'date' });
+      setTasks(newTasks); // Always use AI-generated tasks
+      if (error) {
+        console.error("DB save failed:", error);
+        showToast("⚠️", "Plan Not Saved", "AI plan loaded but couldn't save to database");
       }
     } catch (e) {
       console.error("Error generating plan:", e);
       setTasks(TASKS0);
+      showToast("❌", "Plan Generation Failed", "Using default tasks. Check AI settings.");
     }
   };
 
   const calculateStreak = async () => {
     try {
-      const { data } = await supabase.from('daily_summaries')
-        .select('date')
-        .order('date', { ascending: false })
-        .limit(60);
-      if (!data || data.length === 0) return;
+      let dateSet;
+      const today = new Date();
+      const todayStr = today.toISOString().split('T')[0];
+
+      if (supabase) {
+        // Supabase path: read from daily_summaries
+        const { data } = await supabase.from('daily_summaries')
+          .select('date')
+          .order('date', { ascending: false })
+          .limit(60);
+        if (!data || data.length === 0) return;
+        dateSet = new Set(data.map(d => d.date));
+      } else {
+        // Local fallback: scan nx-daily-{date} keys in localStorage
+        dateSet = new Set();
+        for (let i = 0; i < 60; i++) {
+          const d = new Date(today);
+          d.setDate(d.getDate() - i);
+          const ds = d.toISOString().split('T')[0];
+          if (localStorage.getItem("nx-daily-" + ds)) dateSet.add(ds);
+        }
+        if (dateSet.size === 0) return;
+      }
 
       let streak = 0;
-      const today = new Date();
       let checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - 1);
 
-      const dateSet = new Set(data.map(d => d.date));
-
-      const todayStr = today.toISOString().split('T')[0];
       if (dateSet.has(todayStr)) {
         streak = 1;
         checkDate = new Date(today);
@@ -138,34 +173,40 @@ Respond with ONLY the JSON array, no explanation.`;
       }
 
       let freezesUsed = 0;
+      const todayFreezeKey = "nx-freezes-used-" + todayStr;
+
       while (true) {
         const dateStr = checkDate.toISOString().split('T')[0];
         if (dateSet.has(dateStr)) {
           streak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {
-          // Streak freeze: allow 1-day gap if freezes available
           const prevDate = new Date(checkDate);
           prevDate.setDate(prevDate.getDate() - 1);
           const prevStr = prevDate.toISOString().split('T')[0];
-          if (dateSet.has(prevStr) && freezesUsed < (stats.streakFreezes || 1)) {
+          const availableFreezes = Math.max((stats.streakFreezes || 1), 0);
+          if (dateSet.has(prevStr) && freezesUsed < availableFreezes) {
             freezesUsed++;
-            streak++; // Count the freeze day as a streak day
-            checkDate.setDate(checkDate.getDate() - 2); // Skip the gap
+            streak++;
+            checkDate.setDate(checkDate.getDate() - 2);
           } else {
             break;
           }
         }
       }
 
-      // Award new freezes at milestones
+      localStorage.setItem(todayFreezeKey, JSON.stringify(freezesUsed));
+
       let bonusFreezes = 0;
       if (streak >= 30) bonusFreezes = 3;
       else if (streak >= 14) bonusFreezes = 2;
       else if (streak >= 7) bonusFreezes = 1;
 
+      const baseFreeze = Math.max(stats.streakFreezes || 1, bonusFreezes);
+      const finalFreezes = Math.max(0, baseFreeze - freezesUsed);
+
       setStats(prev => {
-        const updated = { ...prev, streak, streakFreezes: Math.max(prev.streakFreezes || 1, bonusFreezes) - freezesUsed };
+        const updated = { ...prev, streak, streakFreezes: finalFreezes };
         save("nx-stats", updated);
         return updated;
       });
@@ -186,7 +227,7 @@ Respond with ONLY the JSON array, no explanation.`;
 
   const resetGame = async () => {
     // 1. Preserve Settings (API Keys)
-    const settings = await load("nx-settings");
+    const settings = load("nx-settings");
 
     // 2. Wipe Supabase (if connected)
     if (supabase) {
@@ -210,10 +251,10 @@ Respond with ONLY the JSON array, no explanation.`;
   };
 
   const endDay = async (metrics) => {
-    // if (!supabase) return alert("Connect Supabase to use End of Day analysis."); // Checked in handleEndDay
     setAnalyzing(true);
     const completed = tasks.filter(t => t.done);
     const score = tasks.length ? Math.round((completed.length / tasks.length) * 100) : 0;
+    const todayStr = new Date().toISOString().split('T')[0];
 
     const prompt = `Analyze my day.
 Completed: ${completed.map(t => t.name).join(", ")}
@@ -230,12 +271,17 @@ Respond in this JSON format:
 }`;
 
     try {
-      const res = await ai([{ role: "user", content: prompt }], "You are a life coach.");
-      const jsonMatch = res.match(/\{[\s\S]*\}/);
-      const analysis = jsonMatch ? JSON.parse(jsonMatch[0]) : { summary: res, mood: "Neutral" };
+      let analysis = { summary: "Day completed with " + score + "% productivity.", mood: "Neutral" };
+      try {
+        const res = await ai([{ role: "user", content: prompt }], "You are a life coach.");
+        const jsonMatch = res.match(/\{[\s\S]*\}/);
+        if (jsonMatch) analysis = JSON.parse(jsonMatch[0]);
+      } catch (aiErr) {
+        console.warn("AI analysis failed, using fallback:", aiErr);
+      }
 
-      await supabase.from('daily_summaries').insert([{
-        date: new Date().toISOString().split('T')[0],
+      const summaryData = {
+        date: todayStr,
         summary: analysis.summary,
         mood: analysis.mood,
         mood_score: metrics.mood,
@@ -244,24 +290,27 @@ Respond in this JSON format:
         sleep_score: metrics.sleep,
         productivity_score: score,
         completed_tasks: completed
-      }]);
+      };
+
+      if (supabase) {
+        await supabase.from('daily_summaries').insert([summaryData]);
+      }
+      // Always save locally for streak tracking
+      save("nx-daily-" + todayStr, summaryData);
 
       showToast("🌙", "Day Ended", "Analysis saved. See you tomorrow!");
     } catch (e) {
       console.error(e);
-      showToast("❌", "Error", "Could not analyze day.");
+      // Still mark day as completed locally for streak
+      save("nx-daily-" + todayStr, { date: todayStr, productivity_score: score });
+      showToast("❌", "Error", "Analysis failed, but day was recorded.");
     }
     setAnalyzing(false);
-    setShowCheckIn(false); // Close modal after analysis completes
-    // Recalculate streak after saving new summary
-    if (supabase) calculateStreak();
+    setShowCheckIn(false);
+    calculateStreak();
   };
 
   const handleEndDay = () => {
-    if (!supabase) {
-      showToast("⚠️", "Supabase Required", "Connect Supabase in Settings to use End of Day analysis.");
-      return;
-    }
     setShowCheckIn(true);
   };
 
@@ -351,6 +400,11 @@ Respond in this JSON format:
     showToast("❤️", "Health Saved", "Data will inform tomorrow's AI schedule");
   };
 
+  // Gate: show full-page onboarding before main app
+  if (showOnboarding) {
+    return <OnboardingPage onComplete={() => setShowOnboarding(false)} />;
+  }
+
   return (
     <>
       <div className="app">
@@ -369,6 +423,7 @@ Respond in this JSON format:
           )}
           {page === "analysis" && <ErrorBoundary><AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={stats.streak || 0} /></ErrorBoundary>}
           {page === "hatchery" && <HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={onDefeat} streak={stats.streak || 0} />}
+          {page === "worldmap" && <WorldMapPage dragon={dragon} stats={stats} showToast={showToast} onXP={(xp) => { setDragon(prev => { const d = { ...prev, xp: prev.xp + xp }; const lvl = Math.floor(d.xp / 100) + 1; if (lvl > d.level) { d.level = lvl; setLevelUp(lvl); } save('nx-dragon', d); return d; }); }} />}
           {page === "ielts" && <ErrorBoundary><IELTSPage /></ErrorBoundary>}
           {page === "health" && <HealthPage health={health} onSave={saveHealth} />}
         </main>
@@ -378,9 +433,9 @@ Respond in this JSON format:
       <div className="mobile-nav">
         {[
           { id: "dashboard", ic: "🏠", label: "Home" },
+          { id: "worldmap", ic: "🗺️", label: "Map" },
           { id: "ielts", ic: "📚", label: "IELTS" },
           { id: "hatchery", ic: "⚔️", label: "Battle" },
-          { id: "analysis", ic: "📊", label: "Analysis" },
           { id: "health", ic: "❤️", label: "Health" },
         ].map(n => (
           <button key={n.id} className={"mob-item" + (page === n.id ? " on" : "")} onClick={() => setPage(n.id)}>
@@ -392,7 +447,6 @@ Respond in this JSON format:
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onReset={resetGame} />}
       {showCheckIn && <DailyCheckInModal onClose={() => setShowCheckIn(false)} onSave={endDay} analyzing={analyzing} />}
-      {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} />}
       <NotificationManager tasks={tasks} />
 
       {toast && (

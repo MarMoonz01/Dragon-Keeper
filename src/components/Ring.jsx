@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Ring({ size = 72, stroke = 5, pct = 0, color = "#00ddb3", children }) {
+const Ring = React.memo(function Ring({ size = 72, stroke = 5, pct = 0, color = "#00ddb3", children }) {
     const r = (size - stroke) / 2, c = 2 * Math.PI * r;
     return (
         <div className="ring" style={{ width: size, height: size }}>
@@ -13,4 +13,6 @@ export default function Ring({ size = 72, stroke = 5, pct = 0, color = "#00ddb3"
             <div className="ring-in">{children}</div>
         </div>
     );
-}
+});
+
+export default Ring;
