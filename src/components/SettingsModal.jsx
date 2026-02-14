@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { load, save } from '../utils/helpers';
+import { useSettings } from '../context/SettingsContext';
 
-export default function SettingsModal({ onClose, onReset }) {
+export default function SettingsModal() {
+    const { showSettings, setShowSettings: onClose, resetGame: onReset } = useSettings();
+    if (!showSettings) return null;
     const [provider, setProvider] = useState("claude");
     const [keys, setKeys] = useState({ claudeKey: "", openaiKey: "", geminiKey: "", supabaseUrl: "", supabaseKey: "" });
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", studyHours: "3", targetSleep: "8", exerciseDays: "5" });
@@ -29,6 +32,12 @@ export default function SettingsModal({ onClose, onReset }) {
         }
     }, []);
 
+    useEffect(() => {
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     const handleSave = () => {
         save("nx-settings", { provider, ...keys, ...goals });
         const supabaseChanged = keys.supabaseUrl !== initialSupabase.url || keys.supabaseKey !== initialSupabase.key;
@@ -41,7 +50,7 @@ export default function SettingsModal({ onClose, onReset }) {
 
     return (
         <div className="mo">
-            <div className="mc">
+            <div className="mc" role="dialog" aria-modal="true" aria-label="System settings">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <div className="mc-t" style={{ margin: 0 }}>⚙️ System Settings</div>
                     <button className="btn btn-gh btn-sm" onClick={onClose}>✕</button>

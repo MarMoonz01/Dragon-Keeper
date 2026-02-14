@@ -75,10 +75,10 @@ export default function SpeakingDojo({ setErrorMsg }) {
                                 {isRecording ? "⬛" : "🎤"}
                             </button>
                             <button className="btn btn-g" style={{ flex: 1, justifyContent: "center" }} onClick={speakCoach} disabled={speakLoading || !answer.trim()}>
-                                {speakLoading ? "🤖 Analysing..." : "🤖 Get Claude Feedback"}
+                                {speakLoading ? "🤖 Analysing..." : "🤖 Get AI Feedback"}
                             </button>
                         </div>
-                        {speakLoading && <div style={{ marginTop: 10 }}><Loader text="Claude is analysing your response..." /></div>}
+                        {speakLoading && <div style={{ marginTop: 10 }}><Loader text="AI is analysing your response..." /></div>}
                         {speakFb && <div className="aibx" style={{ marginTop: 12 }}>{speakFb}</div>}
                     </>
                 ) : (

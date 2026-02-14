@@ -2,7 +2,10 @@ import React, { useState, useEffect } from 'react';
 import Ring from '../components/Ring';
 import { load, save } from '../utils/helpers';
 
-export default function HealthPage({ health, onSave }) {
+import { useGame } from '../context/GameContext';
+
+export default function HealthPage() {
+    const { health, updateHealth: onSave } = useGame();
     const [loc, setLoc] = useState(health);
     const s = (k, v) => setLoc(p => ({ ...p, [k]: v }));
     const [saved, setSaved] = useState(false);

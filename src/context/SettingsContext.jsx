@@ -70,22 +70,19 @@ export function SettingsProvider({ children }) {
         if (settings) {
             save("nx-settings", settings);
         }
-
-        // 5. Reload to apply defaults
         window.location.reload();
     };
 
     const value = {
+        theme,
+        toggleTheme,
         showSettings,
         setShowSettings,
         showOnboarding,
         setShowOnboarding,
-        completeOnboarding,
         gcal,
         updateGcal,
-        resetGame,
-        theme,
-        toggleTheme
+        resetGame
     };
 
     return (

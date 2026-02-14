@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Loader from './Loader';
+import { useTasks } from '../context/TaskContext';
 
-export default function DailyCheckInModal({ onClose, onSave, analyzing }) {
+export default function DailyCheckInModal() {
+    const { showCheckIn, setShowCheckIn: onClose, endDay: onSave, analyzing } = useTasks();
+    if (!showCheckIn) return null;
     const [metrics, setMetrics] = useState({
         mood: 3, energy: 3, focus: 3, sleep: 3, reflection: ""
     });
@@ -10,8 +13,13 @@ export default function DailyCheckInModal({ onClose, onSave, analyzing }) {
 
     const handleSubmit = () => {
         onSave(metrics);
-        // Don't close — parent will close after AI analysis completes
     };
+
+    useEffect(() => {
+        const handleEsc = (e) => { if (e.key === 'Escape' && !analyzing) onClose(); };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose, analyzing]);
 
     const categories = [
         { id: "mood", label: "Mood", icon: "😊" },
@@ -22,7 +30,7 @@ export default function DailyCheckInModal({ onClose, onSave, analyzing }) {
 
     return (
         <div className="mo">
-            <div className="mc">
+            <div className="mc" role="dialog" aria-modal="true" aria-label="End of day check-in">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <div className="mc-t" style={{ margin: 0 }}>🌙 End of Day Check-in</div>
                     <button className="btn btn-gh btn-sm" onClick={onClose} disabled={analyzing}>✕</button>
@@ -70,7 +78,7 @@ export default function DailyCheckInModal({ onClose, onSave, analyzing }) {
 
                 {analyzing && (
                     <div style={{ marginBottom: 12 }}>
-                        <Loader text="Claude is analysing your day..." />
+                        <Loader text="AI is analysing your day..." />
                     </div>
                 )}
 

@@ -12,9 +12,38 @@ export default function LibraryPage() {
     const [files, setFiles] = useState([]);
     const [activeDoc, setActiveDoc] = useState(null);
     const [extracting, setExtracting] = useState(false);
-    const [chat, setChat] = useState([]); // { role: "user"|"ai", content: "" }
+    const [chat, setChat] = useState([]);
     const [input, setInput] = useState("");
     const [aiThinking, setAiThinking] = useState(false);
+
+    // Load persisted files from localStorage on mount
+    useEffect(() => {
+        const saved = load('nx-library');
+        if (saved && saved.length > 0) {
+            setFiles(saved.map(f => ({ ...f, url: null }))); // Blob URLs don't persist
+        }
+    }, []);
+
+    // Cleanup: revoke Blob URLs on unmount to prevent memory leaks
+    useEffect(() => {
+        return () => {
+            files.forEach(f => { if (f.url) URL.revokeObjectURL(f.url); });
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // Save files to localStorage whenever they change (debounced via effect)
+    const persistFiles = (newFiles) => {
+        const toSave = newFiles.map(f => ({
+            id: f.id,
+            name: f.name,
+            date: f.date,
+            size: f.size,
+            text: (f.text || "").substring(0, 50000), // Cap at 50KB per doc
+            summary: f.summary || ""
+        }));
+        save('nx-library', toSave);
+    };
 
     const handleUpload = async (e) => {
         const uploaded = Array.from(e.target.files).filter(f => f.type === "application/pdf");
@@ -45,7 +74,9 @@ export default function LibraryPage() {
                 alert("Failed to read " + file.name);
             }
         }
-        setFiles(prev => [...prev, ...newFiles]);
+        const updatedFiles = [...files, ...newFiles];
+        setFiles(updatedFiles);
+        persistFiles(updatedFiles);
         setExtracting(false);
     };
 

@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import Loader from '../Loader';
 import { ai } from '../../utils/helpers';
+import { useGame } from '../../context/GameContext';
 
 export default function EssayWriter() {
+    const { refreshSkill } = useGame();
     const [writingTask, setWritingTask] = useState(2);
     const [essay, setEssay] = useState("");
     const [scores, setScores] = useState(null);
@@ -42,6 +44,14 @@ export default function EssayWriter() {
                 strengths: data.feedback,
                 improve: data.corrections.join("\n")
             });
+
+            // Persist writing score for Dragon Skill Bond + Proactive AI
+            try {
+                const history = JSON.parse(localStorage.getItem("nx-writing-history") || "[]");
+                history.unshift({ date: new Date().toISOString().split("T")[0], band: data.band, task: writingTask });
+                localStorage.setItem("nx-writing-history", JSON.stringify(history.slice(0, 50)));
+                refreshSkill(); // Update dragon skill in real-time
+            } catch (e) { /* ignore storage errors */ }
         } catch (e) {
             console.error("Scoring failed", e);
             alert("Scoring failed. Please try again.");

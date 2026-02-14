@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { load, save } from '../utils/helpers';
-import { DRAGONS } from '../data/constants';
+import { DRAGONS, DRAGON_SKILLS } from '../data/constants';
 
 const GameContext = createContext();
 
@@ -21,9 +21,45 @@ export function GameProvider({ children }) {
         setHealth(load("nx-health") || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 });
     }, []);
 
+    // Dragon Skill — derived from IELTS writing history
+    const dragonSkill = useMemo(() => {
+        const history = load("nx-writing-history") || [];
+        if (history.length === 0) return DRAGON_SKILLS[0]; // Default: Ember Shield (1.0×)
+
+        // Calculate average band from recent writing scores
+        const recent = history.slice(0, 10); // Last 10 scores
+        const avgBand = recent.reduce((sum, s) => sum + (s.band || 0), 0) / recent.length;
+
+        // Find highest matching skill
+        let skill = DRAGON_SKILLS[0];
+        for (const s of DRAGON_SKILLS) {
+            if (avgBand >= s.band) skill = s;
+        }
+        return skill;
+    }, []);
+
+    // Re-derive skill when writing history changes (listen for storage events)
+    const [skillRefresh, setSkillRefresh] = useState(0);
+    const refreshSkill = () => setSkillRefresh(p => p + 1);
+
+    const currentSkill = useMemo(() => {
+        const history = load("nx-writing-history") || [];
+        if (history.length === 0) return DRAGON_SKILLS[0];
+        const recent = history.slice(0, 10);
+        const avgBand = recent.reduce((sum, s) => sum + (s.band || 0), 0) / recent.length;
+        let skill = DRAGON_SKILLS[0];
+        for (const s of DRAGON_SKILLS) {
+            if (avgBand >= s.band) skill = s;
+        }
+        return skill;
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [skillRefresh]);
+
     const addXP = (amount) => {
+        const multiplier = currentSkill.xpMultiplier || 1;
+        const boostedAmount = Math.round(amount * multiplier);
         setDragon(prev => {
-            const nxp = prev.xp + amount;
+            const nxp = prev.xp + boostedAmount;
             const nlv = Math.floor(nxp / 100) + 1;
             if (nlv > prev.level) setTimeout(() => setLevelUp(nlv), 400);
             save("nx-dragon", { xp: nxp, level: nlv });
@@ -72,7 +108,9 @@ export function GameProvider({ children }) {
         updateStats,
         updateHealth,
         defeatMonster,
-        calculateStreak
+        calculateStreak,
+        dragonSkill: currentSkill,
+        refreshSkill
     };
 
     return (

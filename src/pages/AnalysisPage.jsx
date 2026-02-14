@@ -5,7 +5,12 @@ import { ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { CC } from '../data/constants';
 
-export default function AnalysisPage({ tasks, dragon, stats, streak }) {
+import { useGame } from '../context/GameContext';
+import { useTasks } from '../context/TaskContext';
+
+export default function AnalysisPage() {
+    const { dragon, streak } = useGame();
+    const { tasks } = useTasks();
     const [insight, setInsight] = useState("");
     const [loading, setLoading] = useState(false);
     const [metrics, setMetrics] = useState({ mood: 0, energy: 0, focus: 0, sleep: 0 });
@@ -79,12 +84,12 @@ export default function AnalysisPage({ tasks, dragon, stats, streak }) {
             </div>
             <div className="card">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
-                    <div className="ct" style={{ margin: 0 }}>🤖 Claude AI Analysis</div>
+                    <div className="ct" style={{ margin: 0 }}>🤖 AI Analysis</div>
                     <button className="btn btn-v btn-sm" onClick={getInsight} disabled={loading}>{loading ? "Analysing..." : "Get AI Insights"}</button>
                 </div>
-                {loading && <Loader text="Claude is analysing your performance..." />}
+                {loading && <Loader text="AI is analysing your performance..." />}
                 {insight && <div className="aibx">{insight}</div>}
-                {!insight && !loading && <div style={{ color: "var(--t3)", fontSize: 12, textAlign: "center", padding: "18px 0" }}>Click "Get AI Insights" for personalised analysis from Claude</div>}
+                {!insight && !loading && <div style={{ color: "var(--t3)", fontSize: 12, textAlign: "center", padding: "18px 0" }}>Click "Get AI Insights" for personalised analysis</div>}
             </div>
         </div>
     );

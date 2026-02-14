@@ -52,7 +52,12 @@ function daysFromNow(d) {
     return Math.ceil((target - now) / (1000 * 60 * 60 * 24));
 }
 
-export default function WorldMapPage({ dragon, stats, showToast, onXP }) {
+import { useGame } from '../context/GameContext';
+import { useTasks } from '../context/TaskContext';
+
+export default function WorldMapPage() {
+    const { dragon, stats, addXP: onXP } = useGame();
+    const { showToast } = useTasks();
     const [zone, setZone] = useState("scholar");
     const [quests, setQuests] = useState({});      // { nodeId: { status, score, completedAt } }
     const [deadlines, setDeadlines] = useState({}); // { zoneId: "YYYY-MM-DD" }

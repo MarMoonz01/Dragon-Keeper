@@ -3,7 +3,12 @@ import BattleMode from '../components/BattleMode';
 import DragonPanel from '../components/DragonPanel';
 import { DRAGONS, ACHIEVEMENTS } from '../data/constants';
 
-export default function HatcheryPage({ tasks, dragon, stats, onDefeat, streak }) {
+import { useGame } from '../context/GameContext';
+import { useTasks } from '../context/TaskContext';
+
+export default function HatcheryPage() {
+    const { dragon, stats, defeatMonster: onDefeat, streak } = useGame();
+    const { tasks } = useTasks();
     const unlocked = ACHIEVEMENTS.map(a => ({
         ...a,
         cur: Math.min(a.max, a.prog(null, tasks, { ...stats, dragonLevel: dragon.level, streak })),

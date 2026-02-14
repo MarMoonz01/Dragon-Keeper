@@ -2,11 +2,13 @@ import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { DRAGONS } from '../data/constants';
 import { useSettings } from '../context/SettingsContext';
+import { useGame } from '../context/GameContext';
 
-export default function Sidebar({ dragon, onSettings, isOpen }) {
+export default function Sidebar({ isOpen }) {
     const navigate = useNavigate();
     const location = useLocation();
-    const { theme, toggleTheme } = useSettings();
+    const { theme, toggleTheme, setShowSettings } = useSettings();
+    const { dragon, dragonSkill } = useGame();
 
     const activePage = location.pathname.substring(1) || 'dashboard';
     const stage = DRAGONS.reduce((s, st) => dragon.level >= st.lv ? st : s, DRAGONS[0]);
@@ -41,12 +43,17 @@ export default function Sidebar({ dragon, onSettings, isOpen }) {
                 <div>
                     <div className="sb-un">{stage.name}</div>
                     <div className="sb-xp">{dragon.xp} XP · Lv{dragon.level}</div>
+                    {dragonSkill && dragonSkill.xpMultiplier > 1 && (
+                        <div style={{ fontSize: 9, color: "var(--teal)", fontFamily: "'JetBrains Mono',monospace", marginTop: 2 }}>
+                            {dragonSkill.em} {dragonSkill.skill} (×{dragonSkill.xpMultiplier} XP)
+                        </div>
+                    )}
                 </div>
                 <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
                     <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={toggleTheme} title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}>
                         {theme === "light" ? "🌙" : "☀️"}
                     </button>
-                    <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={onSettings}>⚙️</button>
+                    <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={() => setShowSettings(true)}>⚙️</button>
                 </div>
             </div>
         </nav>

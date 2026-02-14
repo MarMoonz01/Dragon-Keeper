@@ -54,6 +54,23 @@ export const DRAGONS: Dragon[] = [
     { lv: 15, name: "Inferno Wyrm", em: "🐉", trait: "Ancient power awakens" },
 ];
 
+export interface DragonSkill {
+    band: number;
+    skill: string;
+    desc: string;
+    xpMultiplier: number;
+    em: string;
+}
+
+export const DRAGON_SKILLS: DragonSkill[] = [
+    { band: 5.5, skill: "Ember Shield", desc: "Basic protection", xpMultiplier: 1.0, em: "🛡️" },
+    { band: 6.0, skill: "Flame Tongue", desc: "Words grow sharper", xpMultiplier: 1.1, em: "🗡️" },
+    { band: 6.5, skill: "Scholar's Eye", desc: "Reading comprehension deepens", xpMultiplier: 1.2, em: "👁️" },
+    { band: 7.0, skill: "Dragon's Absorption", desc: "Absorb 1.5× monster XP", xpMultiplier: 1.5, em: "💎" },
+    { band: 7.5, skill: "Ancient Wisdom", desc: "XP doubled from IELTS tasks", xpMultiplier: 1.75, em: "📜" },
+    { band: 8.0, skill: "Sovereign's Aura", desc: "All XP ×2", xpMultiplier: 2.0, em: "👑" },
+];
+
 export const MONSTERS: Monster[] = [
     { name: "Procrastination Goblin", em: "👺", maxHp: 80, reward: 50, level: 1 },
     { name: "Fatigue Wraith", em: "👻", maxHp: 120, reward: 75, level: 2 },

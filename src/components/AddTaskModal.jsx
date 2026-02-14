@@ -1,11 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 export default function AddTaskModal({ onAdd, onClose }) {
     const [f, setF] = useState({ name: "", time: "09:00", cat: "work", xp: 30, hp: 20, calSync: true });
     const s = (k, v) => setF(p => ({ ...p, [k]: v }));
+
+    useEffect(() => {
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        window.addEventListener('keydown', handleEsc);
+        return () => window.removeEventListener('keydown', handleEsc);
+    }, [onClose]);
+
     return (
         <div className="mo" onClick={onClose}>
-            <div className="mc" onClick={e => e.stopPropagation()}>
+            <div className="mc" onClick={e => e.stopPropagation()} role="dialog" aria-modal="true" aria-label="Add new task">
                 <div className="mc-t">✦ Add New Task</div>
                 <div className="fr"><label>Task Name</label>
                     <input className="inp" placeholder="e.g. IELTS Writing Practice" value={f.name} onChange={e => s("name", e.target.value)} />

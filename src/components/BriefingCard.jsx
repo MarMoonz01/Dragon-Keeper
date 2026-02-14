@@ -7,6 +7,7 @@ export default function BriefingCard({ dragon, streak }) {
     const [collapsed, setCollapsed] = useState(false);
 
     useEffect(() => {
+        let isMounted = true;
         const key = "brief_" + new Date().toDateString() + "_lv" + dragon.level + "_s" + streak;
         const c = load(key);
         if (c) {
@@ -14,9 +15,10 @@ export default function BriefingCard({ dragon, streak }) {
         } else {
             setBriefLoading(true);
             ai([{ role: "user", content: "Daily briefing: IELTS target 7.5 (current 6.5), healthy habits. " + new Date().toDateString() + ". Dragon Lv." + dragon.level + ", streak " + streak + " days. Give: 1 key priority, 1 IELTS tip, 1 motivational line. Max 90 words." }])
-                .then(r => { setBriefing(r); save(key, r); setBriefLoading(false); })
-                .catch(() => setBriefLoading(false));
+                .then(r => { if (!isMounted) return; setBriefing(r); save(key, r); setBriefLoading(false); })
+                .catch(() => { if (isMounted) setBriefLoading(false); });
         }
+        return () => { isMounted = false; };
     }, [dragon.level, streak]);
 
     if (!briefLoading && !briefing) return null;

@@ -1,6 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { useTasks } from '../context/TaskContext';
 
-export default function FocusPage({ task, onComplete, onExit }) {
+export default function FocusPage() {
+    const { state } = useLocation();
+    const navigate = useNavigate();
+    const { completeTask } = useTasks();
+    const task = state?.task;
+
+    const onExit = () => navigate('/dashboard');
+    const onComplete = (id) => completeTask(id, task?.xp || 20);
     const DURATION = 25 * 60;
     const [timeLeft, setTimeLeft] = useState(DURATION);
     const [isActive, setIsActive] = useState(true);
@@ -71,7 +80,7 @@ export default function FocusPage({ task, onComplete, onExit }) {
                     <div className="coffee-liquid" style={{
                         position: "absolute", bottom: 0, left: 0, width: "100%",
                         height: `${liquidHeight}%`,
-                        background: "#6F4E37",
+                        background: "var(--coffee)",
                         transition: "height 1s linear",
                         borderTop: "2px solid rgba(255,255,255,0.1)"
                     }} />

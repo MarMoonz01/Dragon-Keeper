@@ -1,16 +1,31 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import AddTaskModal from '../components/AddTaskModal';
 import Ring from '../components/Ring';
 import Loader from '../components/Loader';
 import DragonPanel from '../components/DragonPanel';
 import GCalPanel from '../components/GCalPanel';
+import JourneyPanel from '../components/JourneyPanel';
 import MiniCal from '../components/MiniCal';
 import BriefingCard from '../components/BriefingCard';
+import EmptyState from '../components/EmptyState';
+import TaskItem from '../components/TaskItem';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { WL } from '../data/constants';
+import { useGame } from '../context/GameContext';
+import { useTasks } from '../context/TaskContext';
+import { useSettings } from '../context/SettingsContext';
+import { useNavigate } from 'react-router-dom';
 
-export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, onEdit, onDelete, onFocus, gcal, onConnect, onPush, pushing, stats }) {
+export default function Dashboard() {
+    const { updateStats, dragon, streak, stats } = useGame();
+    const { tasks, completeTask: onComplete, addTask: onAdd, editTask: onEdit, deleteTask: onDelete, gcalPushing: pushing, onGcalPush: onPush, showToast } = useTasks();
+    const { gcal, updateGcal } = useSettings();
+    const navigate = useNavigate();
+
+    // Derived props
+    const onFocus = (t) => navigate('/focus', { state: { task: t } });
+    const onConnect = () => updateGcal({ ...gcal, connected: true });
     const [genLoading, setGenLoading] = useState(false);
     const [aiSched, setAiSched] = useState("");
     const [showAdd, setShowAdd] = useState(false);
@@ -29,7 +44,8 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
             fetchWeeklyHistory();
             fetchCalHighlights();
         }
-    }, [dragon.level, streak]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dragon.level, streak, fetchWeeklyHistory, fetchCalHighlights]);
 
     const fetchWeeklyHistory = async () => {
         const today = new Date();
@@ -88,17 +104,20 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
 
     const cancelEdit = () => { setEditingId(null); };
 
-    // Sort and filter tasks
-    const displayTasks = (() => {
+    // Sort and filter tasks (memoized)
+    const displayTasks = useMemo(() => {
         let t = filterInc ? tasks.filter(x => !x.done) : [...tasks];
         if (sortBy === "time") t.sort((a, b) => (a.time || "").localeCompare(b.time || ""));
         else if (sortBy === "category") t.sort((a, b) => a.cat.localeCompare(b.cat));
         else if (sortBy === "xp") t.sort((a, b) => b.xp - a.xp);
         return t;
-    })();
+    }, [tasks, sortBy, filterInc]);
 
     // Check for "now" tasks (within ±15 min)
-    const nowMinutes = new Date().getHours() * 60 + new Date().getMinutes();
+    const nowMinutes = useMemo(() => {
+        const n = new Date();
+        return n.getHours() * 60 + n.getMinutes();
+    }, []);
     const isNow = (timeStr) => {
         if (!timeStr) return false;
         const [h, m] = timeStr.split(":").map(Number);
@@ -119,13 +138,28 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                     { ic: "⚡", v: pct + "%", l: "Daily Progress", ch: "+15% vs yesterday", pos: true, c: "var(--teal)" },
                     { ic: "🏅", v: dragon.xp, l: "Total XP", ch: "+" + tasks.filter(t => t.done).reduce((a, t) => a + t.xp, 0) + " today", pos: true, c: "var(--gold)" },
                     { ic: "📚", v: tasks.filter(t => t.cat === "ielts" && t.done).length + "/3", l: "IELTS Done", ch: "On track", pos: true, c: "var(--violet)" },
-                    { ic: "❤️", v: stats.healthScore || 0, l: "Health Score", ch: "Streak: " + streak + "d 🔥" + (stats.streakFreezes ? " 🧊×" + stats.streakFreezes : ""), pos: true, c: "var(--rose)" },
+                    { ic: "❤️", v: stats.healthScore || 0, l: "Health Score", ch: "Streak: " + streak + "d 🔥" + (stats.streakFreezes ? " 🧊×" + stats.streakFreezes : ""), pos: true, c: "var(--rose)", freezes: stats.streakFreezes || 0 },
                 ].map((s, i) => (
                     <div key={i} className="sc">
                         <div className="sc-ic">{s.ic}</div>
                         <div className="sc-v" style={{ color: s.c }}>{s.v}</div>
                         <div className="sc-l">{s.l}</div>
-                        <div className={"sc-ch " + (s.pos ? "pos" : "neg")}>{s.ch}</div>
+                        <div className={"sc-ch " + (s.pos ? "pos" : "neg")} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                            {s.ch}
+                            {s.freezes > 0 && (
+                                <button
+                                    onClick={() => {
+                                        if (window.confirm(`Use 1 Streak Freeze? (${s.freezes} remaining)\n\nYour streak will be preserved even if you miss tasks today.`)) {
+                                            updateStats({ streakFreezes: s.freezes - 1 });
+                                            showToast("🧊 Streak Freeze used! Streak preserved.");
+                                        }
+                                    }}
+                                    style={{ background: "rgba(56,189,248,.12)", border: "1px solid rgba(56,189,248,.3)", borderRadius: 6, cursor: "pointer", padding: "2px 6px", fontSize: 9, color: "var(--sky)", fontWeight: 700 }}
+                                    aria-label="Use streak freeze"
+                                    title="Use streak freeze to preserve your streak"
+                                >USE</button>
+                            )}
+                        </div>
                     </div>
                 ))}
             </div>
@@ -155,69 +189,25 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                         </div>
                         <div className="sl">
                             {displayTasks.map(t => (
-                                <div key={t.id}>
-                                    {editingId === t.id ? (
-                                        <div className="task" style={{ flexDirection: "column", gap: 8, cursor: "default" }}>
-                                            <div style={{ display: "flex", gap: 8, width: "100%" }}>
-                                                <input className="inp" style={{ flex: 1, padding: "6px 10px", fontSize: 12 }} value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} autoFocus onKeyDown={e => e.key === "Enter" && saveEdit()} />
-                                                <input className="inp" type="time" style={{ width: 90, padding: "6px 8px", fontSize: 11 }} value={editForm.time} onChange={e => setEditForm({ ...editForm, time: e.target.value })} />
-                                            </div>
-                                            <div style={{ display: "flex", gap: 8, width: "100%", alignItems: "center" }}>
-                                                <select className="inp" style={{ width: 90, padding: "6px 8px", fontSize: 11 }} value={editForm.cat} onChange={e => setEditForm({ ...editForm, cat: e.target.value })}>
-                                                    {["health", "work", "ielts", "mind", "social"].map(c => <option key={c}>{c}</option>)}
-                                                </select>
-                                                <input className="inp" type="number" min={5} max={100} style={{ width: 60, padding: "6px 8px", fontSize: 11 }} value={editForm.xp} onChange={e => setEditForm({ ...editForm, xp: e.target.value })} />
-                                                <span style={{ fontSize: 10, color: "var(--t3)" }}>XP</span>
-                                                <div style={{ marginLeft: "auto", display: "flex", gap: 4 }}>
-                                                    <button className="btn btn-g btn-sm" style={{ padding: "4px 10px" }} onClick={saveEdit}>Save</button>
-                                                    <button className="btn btn-gh btn-sm" style={{ padding: "4px 10px" }} onClick={cancelEdit}>✕</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className={"task" + (t.done ? " done" : "")} style={{ position: "relative", alignItems: "center" }}>
-                                            <div className={"chk" + (t.done ? " y" : "")} onClick={() => onComplete(t.id, t.xp)}>{t.done ? "✓" : ""}</div>
-                                            <div style={{ flex: 1 }} onClick={() => !t.done && startEdit(t)}>
-                                                <div className="tn">{t.name}</div>
-                                                <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
-                                                    <span className="tm">⏰ {t.time}</span>
-                                                    {t.calSync && <span style={{ fontSize: 9, color: "var(--teal)" }}>📅</span>}
-                                                    {isNow(t.time) && !t.done && <span className="badge bt" style={{ fontSize: 8, padding: "1px 6px", animation: "pulse 2s infinite" }}>⏰ NOW</span>}
-                                                </div>
-                                            </div>
-                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                                                    <span className={"cat c-" + t.cat}>{t.cat}</span>
-                                                    <span className="xptag">+{t.xp}xp</span>
-                                                </div>
-                                                {!t.done && (
-                                                    <div style={{ display: "flex", gap: 4 }}>
-                                                        <button onClick={(e) => { e.stopPropagation(); onFocus(t); }}
-                                                            style={{ background: "transparent", border: "1px solid var(--bdr)", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "var(--t3)", transition: "all .2s", padding: "4px 6px" }}
-                                                            onMouseEnter={e => { e.target.style.color = "var(--t1)"; e.target.style.borderColor = "var(--t3)"; }}
-                                                            onMouseLeave={e => { e.target.style.color = "var(--t3)"; e.target.style.borderColor = "var(--bdr)"; }}
-                                                            title="Focus Mode">
-                                                            🍅
-                                                        </button>
-                                                        <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
-                                                            style={{ background: "transparent", border: "1px solid var(--bdr)", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "var(--t3)", transition: "all .2s", padding: "4px 6px" }}
-                                                            onMouseEnter={e => { e.target.style.color = "var(--rose)"; e.target.style.borderColor = "var(--rose)"; }}
-                                                            onMouseLeave={e => { e.target.style.color = "var(--t3)"; e.target.style.borderColor = "var(--bdr)"; }}
-                                                            title="Delete task">
-                                                            🗑️
-                                                        </button>
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                    )}
-                                </div>
+                                <TaskItem
+                                    key={t.id}
+                                    t={t}
+                                    editingId={editingId}
+                                    editForm={editForm}
+                                    setEditForm={setEditForm}
+                                    saveEdit={saveEdit}
+                                    cancelEdit={cancelEdit}
+                                    startEdit={startEdit}
+                                    onComplete={onComplete}
+                                    onFocus={onFocus}
+                                    onDelete={onDelete}
+                                    isNow={isNow}
+                                />
                             ))}
                             {displayTasks.length === 0 && (
-                                <div style={{ textAlign: "center", padding: 20, color: "var(--t3)", fontSize: 12 }}>
-                                    {filterInc ? "All tasks completed! 🎉" : "No tasks yet. Add one above!"}
-                                </div>
+                                filterInc
+                                    ? <EmptyState emoji="🎉" title="All tasks conquered!" subtitle="Your dragon rests, but tomorrow brings new challenges." />
+                                    : <EmptyState emoji="🐉" title="Your dragon is waiting!" subtitle="Complete your first task to awaken it." action={{ label: "+ Add Task", onClick: () => setShowAdd(true) }} />
                             )}
                         </div>
                     </div>
@@ -236,21 +226,22 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                         <div className="ct">🤖 AI Schedule Generator</div>
                         <button className="btn btn-v" style={{ width: "100%", justifyContent: "center", padding: "12px 18px" }} onClick={genSchedule} disabled={genLoading}>
                             <span style={{ fontSize: 16 }}>🤖</span>
-                            {genLoading ? "Generating with Claude AI..." : "Generate Tomorrow's Schedule"}
+                            {genLoading ? "Generating with AI..." : "Generate Tomorrow's Schedule"}
                         </button>
-                        {genLoading && <div style={{ marginTop: 10 }}><Loader text="Claude is building your personalised plan..." /></div>}
+                        {genLoading && <div style={{ marginTop: 10 }}><Loader text="AI is building your personalised plan..." /></div>}
                         {aiSched && <div className="aibx" style={{ marginTop: 12 }}>{aiSched}</div>}
                         {!aiSched && !genLoading && (
                             <div className="ins" style={{ marginTop: 10 }}>
                                 <span className="ins-ic">💡</span>
-                                <span>Claude AI analyses today's performance and generates a schedule optimised for your IELTS goals, health patterns, and productivity rhythms.</span>
+                                <span>AI analyses today's performance and generates a schedule optimised for your IELTS goals, health patterns, and productivity rhythms.</span>
                             </div>
                         )}
                     </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <JourneyPanel />
                     <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks} />
-                    <GCalPanel gcal={gcal} onConnect={onConnect} onPush={onPush} pushing={pushing} />
+                    <GCalPanel tasks={tasks} />
                     <div className="card"><div className="ct">Calendar</div><MiniCal hi={calHighlights.length > 0 ? calHighlights : []} /></div>
                 </div>
             </div>
