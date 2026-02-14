@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { MONSTERS } from '../data/constants';
+import { generateRandomMonster } from '../utils/gameLogic';
 
-export default function BattleMode({ tasks, defeated, onDefeat }) {
-    const mi = Math.min(Math.floor(defeated / 2), MONSTERS.length - 1);
-    const M = MONSTERS[mi];
-    const monRef = useRef(M);
-    monRef.current = M;
+export default function BattleMode({ tasks, defeated, onDefeat, level }) {
+    // Generate initial monster based on dragon level
+    const [monster, setMonster] = useState(() => generateRandomMonster(level || 1));
+    const monRef = useRef(monster);
+    monRef.current = monster;
 
-    const [mhp, setMhp] = useState(M.maxHp);
+    const [mhp, setMhp] = useState(monster.maxHp);
     const [dhp, setDhp] = useState(100);
     const [log, setLog] = useState(["⚔️ Battle begins! Complete tasks to attack!"]);
     const [shaking, setShaking] = useState(false);
@@ -18,35 +18,53 @@ export default function BattleMode({ tasks, defeated, onDefeat }) {
     const attack = t => {
         if (won || lost) return;
         const dmg = t.hp || 20;
+
+        // 1. Player Attack
         setMhp(prev => {
             const nx = Math.max(0, prev - dmg);
-            if (nx <= 0) { setWon(true); addLog("🎉 " + monRef.current.name + " defeated! +" + monRef.current.reward + " XP!"); setTimeout(() => onDefeat(monRef.current.reward), 600); }
+            if (nx <= 0) {
+                setWon(true);
+                addLog("🎉 " + monRef.current.name + " defeated! +" + monRef.current.xp + " XP!");
+                setTimeout(() => onDefeat(monRef.current.xp), 600);
+            } else {
+                // 2. Boss Counter-Attack (only if alive)
+                setTimeout(() => {
+                    const bossDmg = Math.floor(Math.random() * 12) + 8; // Slightly stronger counter
+                    setDhp(p => {
+                        const nd = Math.max(0, p - bossDmg);
+                        if (nd <= 0) setLost(true);
+                        return nd;
+                    });
+                    addLog("💥 " + monRef.current.name + " counters for " + bossDmg + "!");
+                    setShaking(true); setTimeout(() => setShaking(false), 350);
+                }, 600);
+            }
             return nx;
         });
-        setShaking(true); setTimeout(() => setShaking(false), 350);
+
         addLog("⚡ " + t.name.substring(0, 22) + " deals " + dmg + " dmg!");
     };
 
-    useEffect(() => {
-        if (won || lost) return;
-        const t = setInterval(() => {
-            const dmg = Math.floor(Math.random() * 12) + 4;
-            setDhp(p => { const nx = Math.max(0, p - dmg); if (nx <= 0) setLost(true); return nx; });
-            addLog("💥 " + monRef.current.name + " attacks for " + dmg + "!");
-        }, 7000);
-        return () => clearInterval(t);
-    }, [won, lost]);
+    const nextBattle = () => {
+        const nextMon = generateRandomMonster(level || 1);
+        setMonster(nextMon);
+        setMhp(nextMon.maxHp);
+        setDhp(100);
+        setWon(false);
+        setLost(false);
+        setLog(["⚔️ New battle begins!"]);
+    };
 
     const doneTasks = tasks.filter(t => t.done);
     return (
         <div className="battle">
             <div className="ct">⚔️ Dragon Battle Mode</div>
             <div style={{ textAlign: "center", marginBottom: 12 }}>
-                <div className={"mon-em" + (shaking ? " hit" : "")}>{M.em}</div>
-                <div style={{ fontWeight: 700, fontSize: 13, marginTop: 4 }}>{M.name}</div>
-                <div style={{ fontSize: 10, color: "var(--t2)" }}>Level {M.level} Boss</div>
-                <div className="mhpbar"><div className="mhpfill" style={{ width: `${mhp / M.maxHp * 100}%` }} /></div>
-                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: "var(--rose)" }}>{mhp}/{M.maxHp} HP</div>
+                <div className={"mon-em" + (shaking ? " hit" : "")}>{monster.em}</div>
+                <div style={{ fontWeight: 700, fontSize: 13, marginTop: 4 }}>{monster.name}</div>
+                <div style={{ fontSize: 10, color: "var(--t2)" }}>Level {monster.lv} {monster.type || "Monster"}</div>
+                <div className="mhpbar"><div className="mhpfill" style={{ width: `${mhp / monster.maxHp * 100}%` }} /></div>
+                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: "var(--rose)" }}>{mhp}/{monster.maxHp} HP</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                 <span style={{ fontSize: 10, color: "var(--t2)" }}>🐉 Dragon HP</span>
@@ -66,8 +84,8 @@ export default function BattleMode({ tasks, defeated, onDefeat }) {
             {(won || lost) && (
                 <div style={{ textAlign: "center", marginTop: 10, padding: 10, background: won ? "rgba(52,211,153,.1)" : "rgba(255,94,135,.1)", borderRadius: 9, border: `1px solid ${won ? "rgba(52,211,153,.2)" : "rgba(255,94,135,.2)"}` }}>
                     <div style={{ fontSize: 20, marginBottom: 3 }}>{won ? "🏆" : "💀"}</div>
-                    <div style={{ fontWeight: 700, color: won ? "var(--green)" : "var(--rose)" }}>{won ? `Victory! +${M.reward} XP claimed` : "Defeated... Keep grinding!"}</div>
-                    <button className="btn btn-v btn-sm" style={{ marginTop: 10 }} onClick={() => { setMhp(M.maxHp); setDhp(100); setWon(false); setLost(false); setLog(["⚔️ New battle begins!"]); }}>
+                    <div style={{ fontWeight: 700, color: won ? "var(--green)" : "var(--rose)" }}>{won ? `Victory! +${monster.xp} XP claimed` : "Defeated... Keep grinding!"}</div>
+                    <button className="btn btn-v btn-sm" style={{ marginTop: 10 }} onClick={nextBattle}>
                         ⚔️ Next Battle
                     </button>
                 </div>

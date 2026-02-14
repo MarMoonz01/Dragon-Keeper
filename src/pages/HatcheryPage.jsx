@@ -14,7 +14,7 @@ export default function HatcheryPage({ tasks, dragon, stats, onDefeat, streak })
             <div className="ph"><div className="ph-title">Dragon Hatchery</div><div className="ph-sub">Battle monsters · Earn achievements · Evolve your dragon</div></div>
             <div className="gm">
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <BattleMode tasks={tasks} defeated={stats.monstersDefeated || 0} onDefeat={onDefeat} />
+                    <BattleMode tasks={tasks} defeated={stats.monstersDefeated || 0} onDefeat={onDefeat} level={dragon.level} />
                     <div className="card">
                         <div className="ct">🏆 Achievements</div>
                         <div className="g2">

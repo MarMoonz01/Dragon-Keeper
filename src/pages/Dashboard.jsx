@@ -202,7 +202,7 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                                             </div>
                                         </div>
                                     ) : (
-                                        <div className={"task" + (t.done ? " done" : "")} style={{ position: "relative" }}>
+                                        <div className={"task" + (t.done ? " done" : "")} style={{ position: "relative", alignItems: "center" }}>
                                             <div className={"chk" + (t.done ? " y" : "")} onClick={() => onComplete(t.id, t.xp)}>{t.done ? "✓" : ""}</div>
                                             <div style={{ flex: 1 }} onClick={() => !t.done && startEdit(t)}>
                                                 <div className="tn">{t.name}</div>
@@ -212,20 +212,32 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
                                                     {isNow(t.time) && !t.done && <span className="badge bt" style={{ fontSize: 8, padding: "1px 6px", animation: "pulse 2s infinite" }}>⏰ NOW</span>}
                                                 </div>
                                             </div>
-                                            <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
-                                                <span className={"cat c-" + t.cat}>{t.cat}</span>
-                                                <span className="xptag">+{t.xp}xp</span>
+                                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>
+                                                    <span className={"cat c-" + t.cat}>{t.cat}</span>
+                                                    <span className="xptag">+{t.xp}xp</span>
+                                                </div>
+                                                {!t.done && (
+                                                    <div style={{ display: "flex", gap: 4 }}>
+                                                        <button onClick={(e) => { e.stopPropagation(); onFocus(t); }}
+                                                            style={{ background: "transparent", border: "1px solid var(--bdr)", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "var(--t3)", transition: "all .2s", padding: "4px 6px" }}
+                                                            onMouseEnter={e => { e.target.style.color = "var(--t1)"; e.target.style.borderColor = "var(--t3)"; }}
+                                                            onMouseLeave={e => { e.target.style.color = "var(--t3)"; e.target.style.borderColor = "var(--bdr)"; }}
+                                                            title="Focus Mode">
+                                                            🍅
+                                                        </button>
+                                                        <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
+                                                            style={{ background: "transparent", border: "1px solid var(--bdr)", borderRadius: 4, cursor: "pointer", fontSize: 13, color: "var(--t3)", transition: "all .2s", padding: "4px 6px" }}
+                                                            onMouseEnter={e => { e.target.style.color = "var(--rose)"; e.target.style.borderColor = "var(--rose)"; }}
+                                                            onMouseLeave={e => { e.target.style.color = "var(--t3)"; e.target.style.borderColor = "var(--bdr)"; }}
+                                                            title="Delete task">
+                                                            🗑️
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
-                                            {!t.done && (
-                                                <button onClick={(e) => { e.stopPropagation(); onDelete(t.id); }}
-                                                    style={{ position: "absolute", top: 4, right: 4, background: "none", border: "none", cursor: "pointer", fontSize: 11, color: "var(--t3)", opacity: 0.4, transition: "opacity .2s", padding: 2 }}
-                                                    onMouseEnter={e => e.target.style.opacity = 1}
-                                                    onMouseLeave={e => e.target.style.opacity = 0.4}
-                                                    title="Delete task">
-                                                    🗑️
-                                                </button>
-                                            )}
                                         </div>
+
                                     )}
                                 </div>
                             ))}

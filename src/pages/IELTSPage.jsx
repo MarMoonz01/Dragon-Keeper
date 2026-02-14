@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { load } from '../utils/helpers';
 import { ISKILLS } from '../data/constants';
+import { useIELTS } from '../context/IELTSContext';
 import { supabase } from '../utils/supabaseClient';
 
 import ScoreTracker from '../components/ielts/ScoreTracker';
@@ -10,14 +10,22 @@ import Notebook from '../components/ielts/Notebook';
 import FlashcardDeck from '../components/ielts/FlashcardDeck';
 
 export default function IELTSPage() {
+    const {
+        ieltsTarget,
+        realScores,
+        notebook,
+        setNotebook,
+        practiceLogs,
+        togglePracticeLog,
+        addToNotebook,
+        fetchNotebook,
+        addScore
+    } = useIELTS();
+
     const [tab, setTab] = useState("tracker");
-    const [notebook, setNotebook] = useState([]);
-    const [realScores, setRealScores] = useState([]);
-    const [practiceLogs, setPracticeLogs] = useState([]);
     const [showLogModal, setShowLogModal] = useState(false);
     const [newLog, setNewLog] = useState({ listening: "", reading: "", writing: "", speaking: "", note: "" });
     const [errorMsg, setErrorMsg] = useState("");
-    const [ieltsTarget, setIeltsTarget] = useState("7.5");
 
     // Auto-dismiss error toast
     useEffect(() => {
@@ -27,57 +35,8 @@ export default function IELTSPage() {
         }
     }, [errorMsg]);
 
-    // Load IELTS target from settings
-    useEffect(() => {
-        const s = load("nx-settings");
-        if (s && s.ieltsTarget) setIeltsTarget(s.ieltsTarget);
-    }, []);
-
-    const latestScore = realScores.length > 0 ? realScores[0] : null;
+    const latestScore = realScores && realScores.length > 0 ? realScores[0] : null;
     const band = latestScore ? latestScore.overall : "-";
-
-    // Load data on mount
-    useEffect(() => {
-        if (!supabase) return;
-        fetchScores();
-        fetchNotebook();
-        fetchPracticeLogs();
-    }, [supabase]);
-
-    const fetchScores = async () => {
-        const { data, error } = await supabase.from('scores').select('*').order('created_at', { ascending: false });
-        if (error) console.error("Error fetching scores:", error);
-        else if (data) setRealScores(data);
-    };
-
-    const fetchNotebook = async () => {
-        const { data, error } = await supabase.from('notebook').select('*').order('created_at', { ascending: false });
-        if (error) console.error("Error fetching notebook:", error);
-        else if (data) setNotebook(data);
-    };
-
-    const fetchPracticeLogs = async () => {
-        const { data, error } = await supabase.from('practice_logs').select('*').order('created_at', { ascending: false });
-        if (error) console.error("Error fetching practice logs:", error);
-        else if (data) setPracticeLogs(data);
-    };
-
-    const togglePracticeLog = async (id, currentStatus) => {
-        if (!supabase) return;
-        const { error } = await supabase.from('practice_logs').update({ completed: !currentStatus }).eq('id', id);
-        if (error) console.error("Error updating log:", error);
-        else fetchPracticeLogs();
-    };
-
-    const addToNotebook = async (item) => {
-        if (supabase) {
-            const { error } = await supabase.from('notebook').insert([item]);
-            if (error) { console.error("Error saving to notebook:", error); setErrorMsg("Failed to save to Supabase: " + error.message); }
-            else fetchNotebook();
-        } else {
-            setNotebook(prev => [item, ...prev]);
-        }
-    };
 
     const handleSaveLog = async () => {
         if (!supabase) { setErrorMsg("Please configure Supabase in Settings first."); return; }
@@ -87,17 +46,16 @@ export default function IELTSPage() {
         const s = parseFloat(newLog.speaking) || 0;
         const overall = (Math.round((l + r + w + s) / 4 * 2) / 2).toFixed(1);
 
-        const { error } = await supabase.from('scores').insert([{
+        const { error } = await addScore({
             listening: l, reading: r, writing: w, speaking: s,
             overall: parseFloat(overall), note: newLog.note
-        }]);
+        });
 
         if (error) {
             setErrorMsg("Error saving score: " + error.message);
         } else {
             setNewLog({ listening: "", reading: "", writing: "", speaking: "", note: "" });
             setShowLogModal(false);
-            fetchScores();
         }
     };
 

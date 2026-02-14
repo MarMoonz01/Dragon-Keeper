@@ -1,13 +1,16 @@
 import React from 'react';
 import { DRAGONS } from '../data/constants';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Sidebar({ page, setPage, dragon, onSettings }) {
+    const { theme, toggleTheme } = useSettings();
     const stage = DRAGONS.reduce((s, st) => dragon.level >= st.lv ? st : s, DRAGONS[0]);
     const nav = [
         { id: "dashboard", ic: "⚡", label: "Dashboard" },
         { id: "analysis", ic: "📊", label: "Analysis" },
         { id: "hatchery", ic: "🐉", label: "Hatchery" },
         { id: "worldmap", ic: "🗺️", label: "World Map" },
+        { id: "library", ic: "📜", label: "Archives" },
         { id: "ielts", ic: "📚", label: "IELTS Tracker" },
         { id: "health", ic: "❤️", label: "Health" },
     ];
@@ -33,7 +36,12 @@ export default function Sidebar({ page, setPage, dragon, onSettings }) {
                     <div className="sb-un">{stage.name}</div>
                     <div className="sb-xp">{dragon.xp} XP · Lv{dragon.level}</div>
                 </div>
-                <button className="btn btn-gh btn-sm" style={{ marginLeft: "auto", padding: "6px" }} onClick={onSettings}>⚙️</button>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 6 }}>
+                    <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={toggleTheme} title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}>
+                        {theme === "light" ? "🌙" : "☀️"}
+                    </button>
+                    <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={onSettings}>⚙️</button>
+                </div>
             </div>
         </nav>
     );

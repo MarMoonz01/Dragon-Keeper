@@ -1,67 +1,91 @@
-export const load = (k) => { try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : null; } catch { return null; } };
-export const save = (k, v) => { try { localStorage.setItem(k, JSON.stringify(v)); } catch { } };
+import { supabase } from './supabaseClient';
 
-export class AIError extends Error {
-    constructor(message) {
-        super(message);
-        this.name = 'AIError';
+export function load(key) {
+    try {
+        const item = localStorage.getItem(key);
+        return item ? JSON.parse(item) : null;
+    } catch (e) {
+        console.error("Error loading " + key, e);
+        return null;
     }
 }
 
-export async function ai(messages, sys) {
-    const settings = load("nx-settings") || {};
-    const provider = settings.provider || "claude";
-    const key = settings[provider + "Key"];
-
-    if (!key && provider !== "claude") throw new AIError("Missing API Key for " + provider);
-
-    if (provider === "openai") {
-        const r = await fetch("https://api.openai.com/v1/chat/completions", {
-            method: "POST", headers: { "Content-Type": "application/json", "Authorization": "Bearer " + key },
-            body: JSON.stringify({
-                model: "gpt-4o",
-                messages: [{ role: "system", content: sys || "You are a helpful assistant." }, ...messages]
-            })
-        });
-        if (!r.ok) throw new AIError("OpenAI API error: " + r.status);
-        const d = await r.json();
-        if (d.error) throw new AIError(d.error.message);
-        return d.choices?.[0]?.message?.content || "No response.";
+export function save(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+    } catch (e) {
+        console.error("Error saving " + key, e);
     }
-
-    if (provider === "gemini") {
-        const text = messages.map(m => m.content).join("\n\n");
-        const r = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" + key, {
-            method: "POST", headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: (sys ? sys + "\n\n" : "") + text }] }]
-            })
-        });
-        if (!r.ok) throw new AIError("Gemini API error: " + r.status);
-        const d = await r.json();
-        if (d.error) throw new AIError(d.error.message);
-        return d.candidates?.[0]?.content?.parts?.[0]?.text || "No response.";
-    }
-
-    // Default: Claude (Anthropic)
-    const r = await fetch("https://api.anthropic.com/v1/messages", {
-        method: "POST", headers: {
-            "Content-Type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-            "anthropic-dangerous-direct-browser-access": "true"
-        },
-        body: JSON.stringify({
-            model: "claude-sonnet-4-20250514", max_tokens: 1000,
-            system: sys || "You are NEXUS, an elite AI life coach and IELTS expert. Be concise and actionable.",
-            messages
-        })
-    });
-    if (!r.ok) {
-        const errBody = await r.text().catch(() => "");
-        throw new AIError("Claude API error " + r.status + (errBody ? ": " + errBody.slice(0, 100) : ""));
-    }
-    const d = await r.json();
-    if (d.error) throw new AIError(d.error.message);
-    return d.content?.map(c => c.text || "").join("") || "No response.";
 }
+
+export async function ai(messages, system) {
+    // 1. Try Supabase Edge Function (Secure)
+    // We assume 'supabase' is imported from './supabaseClient'
+    if (supabase) {
+        try {
+            const { data, error } = await supabase.functions.invoke('ai-proxy', {
+                body: { messages, system_prompt: system }
+            });
+            if (!error && data?.content?.[0]?.text) {
+                return data.content[0].text;
+            }
+            if (error) console.warn("Edge Function error:", error);
+        } catch (e) {
+            console.warn("Edge Function failed, falling back to local key:", e);
+        }
+    }
+
+    // 2. Fallback to Local Key (Legacy/Dev)
+    const settings = load("nx-settings");
+    const apiKey = settings?.apiKey;
+
+    if (!apiKey) {
+        // Mock response if no key
+        console.warn("No API Key found. Returning mock response.");
+        // Return a mock JSON string if the prompt likely expects JSON (task generation)
+        const lastMsg = messages[messages.length - 1].content;
+        if (lastMsg.includes("JSON")) {
+            return JSON.stringify([{ id: 1, name: "Set API Key in Settings", cat: "work", xp: 10, time: "09:00", done: false, hp: 10 }]);
+        }
+        return "Please set your API Key in Settings to use Nexus AI features.";
+    }
+
+    try {
+        const res = await fetch("https://api.anthropic.com/v1/messages", {
+            method: "POST",
+            headers: {
+                "x-api-key": apiKey,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
+                "dangerously-allow-browser": "true"
+            },
+            body: JSON.stringify({
+                model: "claude-3-haiku-20240307",
+                max_tokens: 1500,
+                system: system,
+                messages: messages
+            })
+        });
+
+        if (!res.ok) {
+            const err = await res.text();
+            throw new Error(`API Error: ${err}`);
+        }
+
+        const data = await res.json();
+        return data.content[0].text;
+    } catch (e) {
+        console.error("AI Call Failed:", e);
+        throw e;
+    }
+}
+
+export const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+};
+
+export const formatTime = (timeStr) => {
+    const [h, m] = timeStr.split(':');
+    const d = new Date(); d.setHours(h); d.setMinutes(m);
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+};

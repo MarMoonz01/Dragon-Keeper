@@ -2656,3 +2656,37 @@ select.inp {
     font-size: 13px !important
   }
 }
+.dashboard-grid { display: grid; grid-template-columns: 1fr 340px; gap: 24px; height: 100%; overflow: hidden; }
+@media (max-width: 1000px) { .dashboard-grid { grid-template-columns: 1fr; overflow-y: auto; } }
+
+/* Light Mode Overrides */
+body.light-mode {
+  --ink: #f8fafc;
+  --surf: #ffffff;
+  --card: #ffffff;
+  --card2: #f1f5f9;
+  --t1: #0f172a;
+  --t2: #64748b;
+  --t3: #94a3b8;
+  --bdr: rgba(0, 0, 0, 0.08);
+  --glow: 0 0 40px rgba(252, 203, 88, 0.15);
+}
+
+body.light-mode {
+  --gold: #b45309;
+  --gold2: #d97706;
+  --teal: #0f766e;
+  --rose: #be123c;
+  --violet: #7c3aed;
+  --sky: #0369a1;
+  --green: #047857;
+}
+
+/* Coffee Focus Animation */
+.coffee-container { position: relative; width: 180px; margin: 0 auto; }
+.coffee-cup { width: 120px; height: 140px; border: 5px solid var(--t2); border-radius: 0 0 50px 50px; position: relative; overflow: hidden; background: rgba(255,255,255,0.05); z-index: 2; }
+.coffee-handle { position: absolute; top: 20px; right: 26px; width: 40px; height: 60px; border: 5px solid var(--t2); border-radius: 0 20px 20px 0; z-index: 1; }
+.coffee-liquid { position: absolute; bottom: 0; left: 0; width: 100%; background: #6F4E37; transition: height 1s linear; border-top: 2px solid rgba(255,255,255,0.1); }
+.coffee-steam { position: absolute; top: -40px; left: 0; right: 60px; display: flex; justify-content: center; gap: 8; z-index: 0; }
+.steam-puff { width: 6px; height: 20px; background: var(--t2); border-radius: 10px; opacity: 0; animation: steamRise 2.5s infinite ease-out; filter: blur(3px); }
+@keyframes steamRise { 0% { transform: translateY(0) scale(1); opacity: 0; } 50% { opacity: 0.4; } 100% { transform: translateY(-40px) scale(1.5); opacity: 0; } }
