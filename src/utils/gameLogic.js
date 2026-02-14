@@ -28,7 +28,8 @@ export const generateRandomMonster = (playerLevel) => {
         name,
         hp,
         maxHp: hp,
-        xp
+        xp,
+        reward: xp // ✅ OVERWRITE: Ensure reward equals scaled XP
     };
 };
 

@@ -1,5 +1,4 @@
-import React from 'react';
-import { supabase } from '../utils/supabaseClient';
+import React, { useEffect, useState } from 'react';
 
 export default function DevWarning() {
     const isProd = import.meta.env.PROD;

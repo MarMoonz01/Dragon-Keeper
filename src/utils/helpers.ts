@@ -134,7 +134,7 @@ export async function ai(messages: Message[], system?: string): Promise<string> 
                     "dangerously-allow-browser": "true"
                 },
                 body: JSON.stringify({
-                    model: "claude-3-haiku-20240307",
+                    model: "claude-3-5-sonnet-20240620",
                     max_tokens: 1500,
                     system: system,
                     messages: messages
