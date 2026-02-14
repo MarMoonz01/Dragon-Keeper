@@ -29,7 +29,7 @@ export default function Dashboard({ tasks, onComplete, dragon, streak, onAdd, on
             fetchWeeklyHistory();
             fetchCalHighlights();
         }
-    }, [supabase]);
+    }, [dragon.level, streak]);
 
     const fetchWeeklyHistory = async () => {
         const today = new Date();

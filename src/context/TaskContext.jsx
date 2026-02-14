@@ -138,7 +138,7 @@ Respond with ONLY the JSON array, no explanation.`;
             updateTaskStatus(upd);
             return upd;
         });
-    }, [addXP]);
+    }, [addXP, updateTaskStatus]);
 
     const addTask = t => {
         setTasks(prev => {

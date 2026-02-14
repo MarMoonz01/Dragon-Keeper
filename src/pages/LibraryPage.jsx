@@ -16,16 +16,6 @@ export default function LibraryPage() {
     const [input, setInput] = useState("");
     const [aiThinking, setAiThinking] = useState(false);
 
-    // Initial Load
-    useEffect(() => {
-        // Load metadata from localStorage (Actual file content not stored in LS due to size)
-        // For prototype: we lose files on refresh unless we restart.
-        // Better: Warn user "Session Storage Only" or use IndexedDB (complex).
-        // Let's stick to session-based for now, but maybe persist metadata?
-        // Actually, without a backend/IndexedDB, files are gone on refresh.
-        // I'll just keep it in state for this session.
-    }, []);
-
     const handleUpload = async (e) => {
         const uploaded = Array.from(e.target.files).filter(f => f.type === "application/pdf");
         if (uploaded.length === 0) return;
