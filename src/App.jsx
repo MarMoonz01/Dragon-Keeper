@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { SettingsProvider, useSettings } from './context/SettingsContext';
 import { GameProvider, useGame } from './context/GameContext';
 import { TaskProvider, useTasks } from './context/TaskContext';
@@ -22,7 +23,9 @@ import { DRAGONS } from './data/constants';
 import './index.css';
 
 function AppContent() {
-  const [page, setPage] = useState("dashboard");
+  const navigate = useNavigate();
+  const location = useLocation();
+  const activePage = location.pathname.substring(1) || 'dashboard';
 
   const { showSettings, setShowSettings, showOnboarding, setShowOnboarding, resetGame, gcal, updateGcal } = useSettings();
   const { dragon, stats, health, addXP, updateHealth, defeatMonster } = useGame();
@@ -32,12 +35,12 @@ function AppContent() {
 
   const startFocus = (task) => {
     setFocusTask(task);
-    setPage("focus");
+    navigate('/focus');
   };
 
   const endFocus = () => {
     setFocusTask(null);
-    setPage("dashboard");
+    navigate('/dashboard');
   };
 
   // Derived state for props
@@ -48,45 +51,49 @@ function AppContent() {
     return <OnboardingPage onComplete={() => setShowOnboarding(false)} />;
   }
 
-  // Handle Level Up Overlay (Needs local state or context? GameContext has levelUp state)
+  // Handle Level Up Overlay
   const { levelUp, setLevelUp } = useGame();
 
   return (
     <>
       <div className="app">
-        <Sidebar page={page} setPage={setPage} dragon={dragon} onSettings={() => setShowSettings(true)} />
+        <Sidebar dragon={dragon} onSettings={() => setShowSettings(true)} />
 
         <main className="main">
-          {page === "dashboard" && (
-            <>
-              <Dashboard
-                tasks={tasks}
-                onComplete={completeTask}
-                dragon={dragon}
-                streak={streak}
-                onAdd={addTask}
-                onEdit={editTask}
-                onDelete={deleteTask}
-                gcal={gcal}
-                onConnect={() => updateGcal({ ...gcal, connected: true })}
-                onPush={onGcalPush}
-                pushing={gcalPushing}
-                stats={stats}
-              />
-              <div style={{ padding: "0 24px 24px" }}>
-                <button className="btn btn-gh" style={{ width: "100%", justifyContent: "center", border: "1px dashed var(--bdr)", padding: 12 }} onClick={() => setShowCheckIn(true)} disabled={analyzing}>
-                  {analyzing ? "🌙 Analysing Day..." : "🌙 End Day & Analyze Performance"}
-                </button>
-              </div>
-            </>
-          )}
-          {page === "analysis" && <ErrorBoundary><AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={streak} /></ErrorBoundary>}
-          {page === "hatchery" && <HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={defeatMonster} streak={streak} />}
-          {page === "worldmap" && <WorldMapPage dragon={dragon} stats={stats} showToast={showToast} onXP={addXP} />}
-          {page === "library" && <LibraryPage />}
-          {page === "focus" && <FocusPage task={focusTask} onComplete={completeTask} onExit={endFocus} />}
-          {page === "ielts" && <ErrorBoundary><IELTSPage /></ErrorBoundary>}
-          {page === "health" && <HealthPage health={health} onSave={updateHealth} />}
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={
+              <>
+                <Dashboard
+                  tasks={tasks}
+                  onComplete={completeTask}
+                  dragon={dragon}
+                  streak={streak}
+                  onAdd={addTask}
+                  onEdit={editTask}
+                  onDelete={deleteTask}
+                  gcal={gcal}
+                  onConnect={() => updateGcal({ ...gcal, connected: true })}
+                  onPush={onGcalPush}
+                  pushing={gcalPushing}
+                  stats={stats}
+                  onFocus={startFocus}
+                />
+                <div style={{ padding: "0 24px 24px" }}>
+                  <button className="btn btn-gh" style={{ width: "100%", justifyContent: "center", border: "1px dashed var(--bdr)", padding: 12 }} onClick={() => setShowCheckIn(true)} disabled={analyzing}>
+                    {analyzing ? "🌙 Analysing Day..." : "🌙 End Day & Analyze Performance"}
+                  </button>
+                </div>
+              </>
+            } />
+            <Route path="/analysis" element={<ErrorBoundary><AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={streak} /></ErrorBoundary>} />
+            <Route path="/hatchery" element={<HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={defeatMonster} streak={streak} />} />
+            <Route path="/worldmap" element={<WorldMapPage dragon={dragon} stats={stats} showToast={showToast} onXP={addXP} />} />
+            <Route path="/library" element={<LibraryPage />} />
+            <Route path="/focus" element={<FocusPage task={focusTask} onComplete={completeTask} onExit={endFocus} />} />
+            <Route path="/ielts" element={<ErrorBoundary><IELTSPage /></ErrorBoundary>} />
+            <Route path="/health" element={<HealthPage health={health} onSave={updateHealth} />} />
+          </Routes>
         </main>
       </div>
 
@@ -99,7 +106,7 @@ function AppContent() {
           { id: "hatchery", ic: "⚔️", label: "Battle" },
           { id: "health", ic: "❤️", label: "Health" },
         ].map(n => (
-          <button key={n.id} className={"mob-item" + (page === n.id ? " on" : "")} onClick={() => setPage(n.id)}>
+          <button key={n.id} className={"mob-item" + (activePage === n.id ? " on" : "")} onClick={() => navigate('/' + n.id)}>
             <span className="mob-ic">{n.ic}</span>
             {n.label}
           </button>
@@ -138,7 +145,9 @@ export default function App() {
       <GameProvider>
         <TaskProvider>
           <IELTSProvider>
-            <AppContent />
+            <BrowserRouter>
+              <AppContent />
+            </BrowserRouter>
           </IELTSProvider>
         </TaskProvider>
       </GameProvider>

@@ -19,7 +19,29 @@ export function save(key, value) {
 }
 
 export async function ai(messages, system) {
-    // 1. Try Supabase Edge Function (Secure)
+    const isProd = import.meta.env.PROD;
+
+    // 1. Production: Enforce Supabase Edge Function (Secure)
+    // Keys are hidden on server. Client does not need to provide them.
+    if (isProd) {
+        if (!supabase) throw new Error("Supabase client not initialized.");
+
+        try {
+            const { data, error } = await supabase.functions.invoke('ai-proxy', {
+                body: { messages, system_prompt: system }
+            });
+
+            if (error) throw error;
+            if (data?.content?.[0]?.text) return data.content[0].text;
+            throw new Error("No content returned from AI Proxy.");
+
+        } catch (e) {
+            console.error("Secure AI Proxy Failed:", e);
+            return "Error: Unable to connect to Secure AI Service. Please check your connection.";
+        }
+    }
+
+    // 2. Development: Try Proxy first, then Fallback to Local Keys (BYOK)
     if (supabase) {
         try {
             const { data, error } = await supabase.functions.invoke('ai-proxy', {
@@ -29,38 +51,35 @@ export async function ai(messages, system) {
                 return data.content[0].text;
             }
         } catch (e) {
-            console.warn("Edge Function failed, falling back to local key:", e);
+            console.warn("Dev: Edge Function failed, falling back to local keys:", e);
         }
     }
 
-    // 2. Load Local Settings
+    // --- LOCAL DEVELOPMENT FALLBACKS (Client-Side Keys) ---
     const settings = load("nx-settings");
     const provider = settings?.provider || "claude";
 
     // Key Selection Logic
     let apiKey = "";
     if (provider === "gemini") apiKey = settings?.geminiKey;
-    else if (provider === "claude") apiKey = settings?.claudeKey || settings?.apiKey; // Fallback to generic 'apiKey'
+    else if (provider === "claude") apiKey = settings?.claudeKey || settings?.apiKey;
 
     if (!apiKey) {
-        // Mock response if likely JSON request (so app doesn't break)
         const lastMsg = messages[messages.length - 1]?.content || "";
         if (lastMsg.includes("JSON")) {
             return JSON.stringify([{ id: 1, name: "Set API Key in Settings", cat: "work", xp: 10, time: "09:00", done: false, hp: 10 }]);
         }
-        return "Please set your API Key in Settings to use Nexus AI features.";
+        return "Dev Mode: Please set your API Key in Settings to use Nexus AI features.";
     }
 
     // --- GOOGLE GEMINI 3 FLASH PREVIEW ---
     if (provider === "gemini") {
         try {
-            // Map messages to Gemini format (user/model)
             const contents = messages.map(m => ({
                 role: m.role === "assistant" ? "model" : "user",
                 parts: [{ text: m.content }]
             }));
 
-            // Use Gemini 3 Flash Preview as requested
             const modelId = "gemini-3-flash-preview";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
@@ -69,7 +88,6 @@ export async function ai(messages, system) {
                 generationConfig: { maxOutputTokens: 2000 }
             };
 
-            // Add System Instruction if provided
             if (system) {
                 payload.systemInstruction = { parts: [{ text: system }] };
             }
@@ -95,7 +113,7 @@ export async function ai(messages, system) {
         }
     }
 
-    // --- ANTHROPIC CLAUDE IMPLEMENTATION (Legacy/Default) ---
+    // --- ANTHROPIC CLAUDE IMPLEMENTATION ---
     if (provider === "claude" || !provider) {
         try {
             const res = await fetch("https://api.anthropic.com/v1/messages", {

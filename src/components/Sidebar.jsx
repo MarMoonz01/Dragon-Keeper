@@ -1,10 +1,16 @@
 import React from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { DRAGONS } from '../data/constants';
 import { useSettings } from '../context/SettingsContext';
 
-export default function Sidebar({ page, setPage, dragon, onSettings }) {
+export default function Sidebar({ dragon, onSettings }) {
+    const navigate = useNavigate();
+    const location = useLocation();
     const { theme, toggleTheme } = useSettings();
+
+    const activePage = location.pathname.substring(1) || 'dashboard';
     const stage = DRAGONS.reduce((s, st) => dragon.level >= st.lv ? st : s, DRAGONS[0]);
+
     const nav = [
         { id: "dashboard", ic: "⚡", label: "Dashboard" },
         { id: "analysis", ic: "📊", label: "Analysis" },
@@ -24,7 +30,7 @@ export default function Sidebar({ page, setPage, dragon, onSettings }) {
             <div className="sb-nav">
                 <div style={{ fontSize: 9, color: "var(--t3)", letterSpacing: 2, padding: "10px 8px 3px", fontWeight: 700, textTransform: "uppercase" }}>Core</div>
                 {nav.map(n => (
-                    <div key={n.id} className={"ni" + (page === n.id ? " on" : "")} onClick={() => setPage(n.id)}>
+                    <div key={n.id} className={"ni" + (activePage === n.id ? " on" : "")} onClick={() => navigate('/' + n.id)}>
                         <span className="ni-ic">{n.ic}</span>{n.label}
                         {n.id === "hatchery" && <span style={{ marginLeft: "auto", fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--gold)" }}>Lv{dragon.level}</span>}
                     </div>
