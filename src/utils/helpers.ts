@@ -1,6 +1,11 @@
 import { supabase } from './supabaseClient';
 
-export function load(key) {
+export interface Message {
+    role: string;
+    content: string;
+}
+
+export function load(key: string): any {
     try {
         const item = localStorage.getItem(key);
         return item ? JSON.parse(item) : null;
@@ -10,7 +15,7 @@ export function load(key) {
     }
 }
 
-export function save(key, value) {
+export function save(key: string, value: any): void {
     try {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
@@ -18,11 +23,10 @@ export function save(key, value) {
     }
 }
 
-export async function ai(messages, system) {
+export async function ai(messages: Message[], system?: string): Promise<string> {
     const isProd = import.meta.env.PROD;
 
     // 1. Production: Enforce Supabase Edge Function (Secure)
-    // Keys are hidden on server. Client does not need to provide them.
     if (isProd) {
         if (!supabase) throw new Error("Supabase client not initialized.");
 
@@ -83,7 +87,7 @@ export async function ai(messages, system) {
             const modelId = "gemini-3-flash-preview";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
-            const payload = {
+            const payload: any = {
                 contents,
                 generationConfig: { maxOutputTokens: 2000 }
             };
@@ -98,6 +102,10 @@ export async function ai(messages, system) {
                 body: JSON.stringify(payload)
             });
 
+            if (res.status === 429) {
+                throw new Error("429 Too Many Requests: The AI is busy. Please try again in a moment.");
+            }
+
             if (!res.ok) {
                 const errText = await res.text();
                 throw new Error(`Gemini API Error: ${errText}`);
@@ -107,7 +115,7 @@ export async function ai(messages, system) {
             const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
             return text || "No content returned from Gemini.";
 
-        } catch (e) {
+        } catch (e: any) {
             console.error("Gemini Request Failed:", e);
             return `Error: ${e.message}`;
         }
@@ -132,6 +140,10 @@ export async function ai(messages, system) {
                 })
             });
 
+            if (res.status === 429) {
+                throw new Error("429 Too Many Requests: Claude is busy. Please try again later.");
+            }
+
             if (!res.ok) {
                 const err = await res.text();
                 throw new Error(`Claude API Error: ${err}`);
@@ -139,19 +151,20 @@ export async function ai(messages, system) {
 
             const data = await res.json();
             return data.content[0].text;
-        } catch (e) {
+        } catch (e: any) {
             console.error("Claude Call Failed:", e);
             throw e;
         }
     }
+    return "Error: Invalid Provider";
 }
 
-export const formatDate = (date) => {
+export const formatDate = (date: string | Date): string => {
     return new Date(date).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 };
 
-export const formatTime = (timeStr) => {
+export const formatTime = (timeStr: string): string => {
     const [h, m] = timeStr.split(':');
-    const d = new Date(); d.setHours(h); d.setMinutes(m);
+    const d = new Date(); d.setHours(parseInt(h)); d.setMinutes(parseInt(m));
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };
