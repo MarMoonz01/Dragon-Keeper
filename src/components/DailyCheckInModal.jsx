@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import Loader from './Loader';
 
-export default function DailyCheckInModal({ onClose, onSave }) {
+export default function DailyCheckInModal({ onClose, onSave, analyzing }) {
     const [metrics, setMetrics] = useState({
         mood: 3, energy: 3, focus: 3, sleep: 3, reflection: ""
     });
@@ -24,14 +25,14 @@ export default function DailyCheckInModal({ onClose, onSave }) {
             <div className="mc">
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
                     <div className="mc-t" style={{ margin: 0 }}>🌙 End of Day Check-in</div>
-                    <button className="btn btn-gh btn-sm" onClick={onClose}>✕</button>
+                    <button className="btn btn-gh btn-sm" onClick={onClose} disabled={analyzing}>✕</button>
                 </div>
 
                 <div style={{ marginBottom: 20, fontSize: 13, color: "var(--t2)" }}>
                     Take a moment to reflect. These metrics help AI tailor your schedule.
                 </div>
 
-                <div className="g2" style={{ gap: 12, marginBottom: 20 }}>
+                <div className="g2" style={{ gap: 12, marginBottom: 20, opacity: analyzing ? 0.5 : 1, pointerEvents: analyzing ? "none" : "auto" }}>
                     {categories.map(c => (
                         <div key={c.id} className="card" style={{ padding: 12, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                             <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -45,6 +46,7 @@ export default function DailyCheckInModal({ onClose, onSave }) {
                                         className={"btn btn-sm " + (metrics[c.id] === v ? "btn-p" : "btn-gh")}
                                         style={{ width: 28, height: 28, padding: 0 }}
                                         onClick={() => handleChange(c.id, v)}
+                                        disabled={analyzing}
                                     >
                                         {v}
                                     </button>
@@ -54,7 +56,7 @@ export default function DailyCheckInModal({ onClose, onSave }) {
                     ))}
                 </div>
 
-                <div className="fr">
+                <div className="fr" style={{ opacity: analyzing ? 0.5 : 1 }}>
                     <label>Reflection (Optional)</label>
                     <textarea
                         className="inp"
@@ -62,12 +64,19 @@ export default function DailyCheckInModal({ onClose, onSave }) {
                         placeholder="What went well? What distracted you? Any quick notes..."
                         value={metrics.reflection}
                         onChange={e => handleChange("reflection", e.target.value)}
+                        disabled={analyzing}
                     />
                 </div>
 
+                {analyzing && (
+                    <div style={{ marginBottom: 12 }}>
+                        <Loader text="Claude is analysing your day..." />
+                    </div>
+                )}
+
                 <div className="mac">
-                    <button className="btn btn-p" style={{ width: "100%", justifyContent: "center" }} onClick={handleSubmit}>
-                        Save & Generate Insights ✨
+                    <button className="btn btn-p" style={{ width: "100%", justifyContent: "center" }} onClick={handleSubmit} disabled={analyzing}>
+                        {analyzing ? "🌙 Analysing..." : "Save & Generate Insights ✨"}
                     </button>
                 </div>
             </div>

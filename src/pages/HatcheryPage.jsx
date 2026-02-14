@@ -34,7 +34,7 @@ export default function HatcheryPage({ tasks, dragon, stats, onDefeat, streak })
                     </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                    <DragonPanel xp={dragon.xp} lv={dragon.level} done={tasks.filter(t => t.done).length} streak={streak} />
+                    <DragonPanel xp={dragon.xp} lv={dragon.level} done={tasks.filter(t => t.done).length} streak={streak} tasks={tasks} />
                     <div className="card">
                         <div className="ct">Evolution Path</div>
                         <div className="tl">

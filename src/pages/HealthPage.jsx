@@ -7,10 +7,14 @@ export default function HealthPage({ health, onSave }) {
     const s = (k, v) => setLoc(p => ({ ...p, [k]: v }));
     const [saved, setSaved] = useState(false);
     const [weeklyHealth, setWeeklyHealth] = useState([0, 0, 0, 0, 0, 0, 0]);
+    const [goals, setGoals] = useState({ ieltsTarget: "7.5", exerciseDays: "5", studyHours: "3", targetSleep: "8" });
 
     useEffect(() => {
         load("nx-health-history").then(h => {
             if (h && Array.isArray(h)) setWeeklyHealth(h);
+        });
+        load("nx-settings").then(s => {
+            if (s) setGoals(g => ({ ...g, ieltsTarget: s.ieltsTarget || g.ieltsTarget, exerciseDays: s.exerciseDays || g.exerciseDays, studyHours: s.studyHours || g.studyHours, targetSleep: s.targetSleep || g.targetSleep }));
         });
     }, []);
 
@@ -26,7 +30,7 @@ export default function HealthPage({ health, onSave }) {
         setWeeklyHealth(updated);
         save("nx-health-history", updated);
 
-        onSave(loc);
+        onSave({ ...loc, healthScore: todayScore });
         setSaved(true);
         setTimeout(() => setSaved(false), 2000);
     };
@@ -60,7 +64,7 @@ export default function HealthPage({ health, onSave }) {
                     </div>
                     <div className="card">
                         <div className="ct">Goals</div>
-                        {[{ ic: "🎯", n: "IELTS Target Band", v: "7.5" }, { ic: "🏃", n: "Exercise Days/Week", v: "5" }, { ic: "📚", n: "Study Hours/Day", v: "3" }, { ic: "💤", n: "Target Sleep (hrs)", v: "8" }].map((g, i) => (
+                        {[{ ic: "🎯", n: "IELTS Target Band", v: goals.ieltsTarget }, { ic: "🏃", n: "Exercise Days/Week", v: goals.exerciseDays }, { ic: "📚", n: "Study Hours/Day", v: goals.studyHours }, { ic: "💤", n: "Target Sleep (hrs)", v: goals.targetSleep }].map((g, i) => (
                             <div key={i} className="goal">
                                 <div style={{ width: 26, height: 26, borderRadius: 7, background: "rgba(167,139,250,.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 12 }}>{g.ic}</div>
                                 <div style={{ flex: 1, fontSize: 12, fontWeight: 600 }}>{g.n}</div>

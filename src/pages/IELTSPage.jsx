@@ -23,6 +23,8 @@ export default function IELTSPage() {
     const [speakLoading, setSpeakLoading] = useState(false);
     const [isRecording, setIsRecording] = useState(false);
     const recognitionRef = useRef(null);
+    const [ieltsAnalysis, setIeltsAnalysis] = useState("");
+    const [analysisLoading, setAnalysisLoading] = useState(false);
 
     // Cleanup speech recognition on unmount
     useEffect(() => {
@@ -36,6 +38,15 @@ export default function IELTSPage() {
     const [showLogModal, setShowLogModal] = useState(false);
     const [newLog, setNewLog] = useState({ listening: "", reading: "", writing: "", speaking: "", note: "" });
     const [practiceLogs, setPracticeLogs] = useState([]);
+    const [errorMsg, setErrorMsg] = useState("");
+
+    // Auto-dismiss error toast
+    useEffect(() => {
+        if (errorMsg) {
+            const t = setTimeout(() => setErrorMsg(""), 5000);
+            return () => clearTimeout(t);
+        }
+    }, [errorMsg]);
 
 
     const latestScore = realScores.length > 0 ? realScores[0] : null;
@@ -78,7 +89,7 @@ export default function IELTSPage() {
 
 
     const handleSaveLog = async () => {
-        if (!supabase) return alert("Please configure Supabase in Settings first.");
+        if (!supabase) { setErrorMsg("Please configure Supabase in Settings first."); return; }
 
         const l = parseFloat(newLog.listening) || 0;
         const r = parseFloat(newLog.reading) || 0;
@@ -94,7 +105,7 @@ export default function IELTSPage() {
             }]);
 
         if (error) {
-            alert("Error saving score: " + error.message);
+            setErrorMsg("Error saving score: " + error.message);
         } else {
             setNewLog({ listening: "", reading: "", writing: "", speaking: "", note: "" });
             setShowLogModal(false);
@@ -107,7 +118,7 @@ export default function IELTSPage() {
             const { error } = await supabase.from('notebook').insert([item]);
             if (error) {
                 console.error("Error saving to notebook:", error);
-                alert("Failed to save to Supabase: " + error.message);
+                setErrorMsg("Failed to save to Supabase: " + error.message);
             } else {
                 fetchNotebook();
             }
@@ -241,7 +252,7 @@ IMPROVE: [two bullet points]` }],
         }
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) return alert("Browser does not support Speech Recognition.");
+        if (!SpeechRecognition) { setErrorMsg("Browser does not support Speech Recognition."); return; }
 
         const recognition = new SpeechRecognition();
         recognition.lang = 'en-US';
@@ -278,6 +289,13 @@ IMPROVE: [two bullet points]` }],
     return (
         <div>
             <div className="ph"><div className="ph-title">IELTS Tracker</div><div className="ph-sub">Track · Practice · Master every band with AI coaching</div></div>
+            {errorMsg && (
+                <div style={{ background: "rgba(255,94,135,.12)", border: "1px solid rgba(255,94,135,.3)", borderRadius: 10, padding: "10px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10, animation: "fadeIn .3s" }}>
+                    <span style={{ fontSize: 16 }}>⚠️</span>
+                    <span style={{ fontSize: 12, color: "var(--rose)", flex: 1 }}>{errorMsg}</span>
+                    <button onClick={() => setErrorMsg("")} style={{ background: "none", border: "none", color: "var(--t2)", cursor: "pointer", fontSize: 14 }}>✕</button>
+                </div>
+            )}
             <div style={{ background: "linear-gradient(135deg,rgba(167,139,250,.12),rgba(0,221,179,.08))", border: "1px solid rgba(167,139,250,.2)", borderRadius: 16, padding: "18px 22px", display: "flex", alignItems: "center", gap: 22, marginBottom: 18, flexWrap: "wrap" }}>
                 <div style={{ textAlign: "center", flexShrink: 0 }}>
                     <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 9, color: "var(--t2)", letterSpacing: 2, marginBottom: 3 }}>OVERALL BAND</div>
@@ -333,30 +351,54 @@ IMPROVE: [two bullet points]` }],
                     </div>
                     <div className="card">
                         <div className="ct">Score History</div>
-                        {ISKILLS.map(s => (
-                            <div key={s.name} style={{ marginBottom: 12 }}>
-                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
-                                    <span style={{ fontSize: 11, fontWeight: 700 }}>{s.ic} {s.name}</span>
-                                    <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: s.color }}>{s.sc}</span>
-                                </div>
-                                <div style={{ display: "flex", gap: 5 }}>
-                                    {s.hist.map((h, i) => (
-                                        <div key={i} style={{ flex: 1, background: "rgba(255,255,255,.05)", borderRadius: 6, padding: "5px 3px", textAlign: "center" }}>
-                                            <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: i === s.hist.length - 1 ? s.color : "var(--t2)" }}>
-                                                {(realScores[i] && realScores[i][s.name.toLowerCase()]) || "-"}
+                        {ISKILLS.map(s => {
+                            const displayScores = realScores.slice(0, 8).reverse();
+                            const latestIdx = displayScores.length - 1;
+                            return (
+                                <div key={s.name} style={{ marginBottom: 12 }}>
+                                    <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 5 }}>
+                                        <span style={{ fontSize: 11, fontWeight: 700 }}>{s.ic} {s.name}</span>
+                                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 12, color: s.color }}>
+                                            {latestScore ? latestScore[s.name.toLowerCase()] : s.sc}
+                                        </span>
+                                    </div>
+                                    <div style={{ display: "flex", gap: 5, overflowX: "auto" }}>
+                                        {displayScores.length === 0 ? (
+                                            <div style={{ flex: 1, fontSize: 11, color: "var(--t3)", textAlign: "center", padding: "8px 0" }}>No scores logged yet</div>
+                                        ) : displayScores.map((entry, i) => (
+                                            <div key={entry.id || i} style={{ flex: 1, minWidth: 44, background: "rgba(255,255,255,.05)", borderRadius: 6, padding: "5px 3px", textAlign: "center" }}>
+                                                <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 11, color: i === latestIdx ? s.color : "var(--t2)" }}>
+                                                    {entry[s.name.toLowerCase()] || "-"}
+                                                </div>
+                                                <div style={{ fontSize: 9, color: "var(--t3)" }}>
+                                                    {new Date(entry.created_at).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}
+                                                </div>
                                             </div>
-                                            <div style={{ fontSize: 9, color: "var(--t3)" }}>
-                                                {realScores[i] ? new Date(realScores[i].created_at).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' }) : "-"}
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <div className="card cs2">
                         <div className="ct">🤖 AI Target Analysis</div>
-                        <div className="aibx">{"🎯 Reaching Band 7.5 (current: " + band + "):\n\n• Writing (+1.5 needed): Biggest gap. Practice 1 Task 2 daily. Fully address all prompt parts & expand vocabulary range.\n• Reading (+1.0): Cap each passage at 18 min. Practice True/False/Not Given question type separately.\n• Listening (at 7.0): Focus on Section 4 monologues. Predict answers before audio plays.\n• Speaking (+1.0): Extend Part 2 to full 2 minutes. Use discourse markers: 'What's more...', 'In contrast...'\n\n📅 Projected Timeline: Band 7.5 achievable in 10–12 weeks at current pace."}</div>
+                        {!ieltsAnalysis && !analysisLoading && (
+                            <button className="btn btn-v btn-sm" style={{ marginBottom: 10 }} onClick={async () => {
+                                setAnalysisLoading(true);
+                                const cacheKey = "ielts_analysis_" + new Date().toDateString();
+                                const cached = await load(cacheKey);
+                                if (cached) { setIeltsAnalysis(cached); setAnalysisLoading(false); return; }
+                                const scoreInfo = latestScore
+                                    ? `Listening: ${latestScore.listening}, Reading: ${latestScore.reading}, Writing: ${latestScore.writing}, Speaking: ${latestScore.speaking}, Overall: ${latestScore.overall}`
+                                    : "No scores logged yet";
+                                const r = await ai([{ role: "user", content: `IELTS Target Analysis. Current scores: ${scoreInfo}. Target: 7.5. Total attempts: ${realScores.length}.\n\nAnalyse which skills need most work, give specific improvement tips for each, and estimate timeline. Max 120 words.` }],
+                                    "You are an IELTS expert tutor. Be specific and data-driven.");
+                                setIeltsAnalysis(r); save(cacheKey, r);
+                                setAnalysisLoading(false);
+                            }}>Generate AI Analysis</button>
+                        )}
+                        {analysisLoading && <Loader text="Analysing your IELTS profile..." />}
+                        {ieltsAnalysis && <div className="aibx">{ieltsAnalysis}</div>}
                     </div>
                 </div>
             )}
@@ -534,48 +576,74 @@ IMPROVE: [two bullet points]` }],
                 </div>
             )}
 
-            {tab === "flashcards" && (
-                <div>
-                    {notebook.filter(i => i.category === 'vocab').length === 0 ? (
-                        <div className="card" style={{ textAlign: "center", padding: 40 }}>
-                            <div style={{ fontSize: 36, marginBottom: 12 }}>📚</div>
-                            <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>No Flashcards Yet</div>
-                            <div style={{ fontSize: 12, color: "var(--t2)" }}>Head to the <strong>Notebook</strong> tab and add some vocabulary first!</div>
-                        </div>
-                    ) : (
-                        <>
-                            <div style={{ textAlign: "center", marginBottom: 14 }}>
-                                <span style={{ fontSize: 11, color: "var(--t2)" }}>Card {fcIdx + 1} of {notebook.filter(i => i.category === 'vocab').length} · Tap to reveal</span>
+            {tab === "flashcards" && (() => {
+                // SRS: sort vocab by mastery (lowest first), then by last_reviewed
+                const vocabCards = notebook
+                    .filter(i => i.category === 'vocab')
+                    .sort((a, b) => (a.mastery || 1) - (b.mastery || 1));
+                const safeIdx = Math.min(fcIdx, Math.max(0, vocabCards.length - 1));
+                const currentCard = vocabCards[safeIdx];
+
+                const updateMastery = async (card, delta) => {
+                    const newMastery = Math.max(1, Math.min(5, (card.mastery || 1) + delta));
+                    if (supabase && card.id) {
+                        await supabase.from('notebook').update({ mastery: newMastery, last_reviewed: new Date().toISOString() }).eq('id', card.id);
+                        fetchNotebook();
+                    } else {
+                        setNotebook(prev => prev.map(n => n === card ? { ...n, mastery: newMastery } : n));
+                    }
+                };
+
+                return (
+                    <div>
+                        {vocabCards.length === 0 ? (
+                            <div className="card" style={{ textAlign: "center", padding: 40 }}>
+                                <div style={{ fontSize: 36, marginBottom: 12 }}>📚</div>
+                                <div style={{ fontWeight: 700, fontSize: 14, marginBottom: 6 }}>No Flashcards Yet</div>
+                                <div style={{ fontSize: 12, color: "var(--t2)" }}>Head to the <strong>Notebook</strong> tab and add some vocabulary first!</div>
                             </div>
-                            <div className="fc" onClick={() => setFcFlip(f => !f)}>
-                                {!fcFlip ? (
-                                    <>
-                                        <div className="fcw">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.word}</div>
-                                        <div className="fcp">{notebook.filter(i => i.category === 'vocab')[fcIdx]?.phonetic}</div>
-                                        <div style={{ fontSize: 11, color: "var(--t2)", marginTop: 14 }}>Tap to reveal ↓</div>
-                                    </>
-                                ) : (
-                                    <>
-                                        <div style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.type}</div>
-                                        <div style={{ fontSize: 15, color: "var(--t1)", fontWeight: 700, marginBottom: 8 }}>{notebook.filter(i => i.category === 'vocab')[fcIdx]?.def}</div>
-                                        <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", fontStyle: "italic", borderLeft: "2px solid var(--violet)", paddingLeft: 10 }}>"{notebook.filter(i => i.category === 'vocab')[fcIdx]?.example}"</div>
-                                    </>
-                                )}
-                            </div>
-                            <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
-                                <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => Math.max(0, i - 1)) }}>← Prev</button>
-                                {fcFlip && (
-                                    <>
-                                        <button className="btn btn-sm" style={{ background: "rgba(255,94,135,.18)", color: "var(--rose)", border: "1px solid rgba(255,94,135,.3)" }} onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>😐 Hard</button>
-                                        <button className="btn btn-sm" style={{ background: "rgba(52,211,153,.18)", color: "var(--green)", border: "1px solid rgba(52,211,153,.3)" }} onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>✓ Got it</button>
-                                    </>
-                                )}
-                                <button className="btn btn-gh" onClick={() => { const len = notebook.filter(n => n.category === 'vocab').length; setFcFlip(false); setFcIdx(i => len > 0 ? (i + 1) % len : 0) }}>Next →</button>
-                            </div>
-                        </>
-                    )}
-                </div>
-            )}
+                        ) : (
+                            <>
+                                <div style={{ textAlign: "center", marginBottom: 14 }}>
+                                    <span style={{ fontSize: 11, color: "var(--t2)" }}>Card {safeIdx + 1} of {vocabCards.length} · Tap to reveal</span>
+                                    {currentCard && <span style={{ fontSize: 10, color: "var(--t3)", marginLeft: 8 }}>Mastery: {"⭐".repeat(currentCard.mastery || 1)}{"☆".repeat(5 - (currentCard.mastery || 1))}</span>}
+                                </div>
+                                <div className="fc" onClick={() => setFcFlip(f => !f)}>
+                                    {!fcFlip ? (
+                                        <>
+                                            <div className="fcw">{currentCard?.word}</div>
+                                            <div className="fcp">{currentCard?.phonetic}</div>
+                                            <div style={{ fontSize: 11, color: "var(--t2)", marginTop: 14 }}>Tap to reveal ↓</div>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div style={{ fontSize: 11, color: "var(--violet)", fontWeight: 700, textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>{currentCard?.type}</div>
+                                            <div style={{ fontSize: 15, color: "var(--t1)", fontWeight: 700, marginBottom: 8 }}>{currentCard?.def}</div>
+                                            <div style={{ fontSize: 11, color: "rgba(255,255,255,.4)", fontStyle: "italic", borderLeft: "2px solid var(--violet)", paddingLeft: 10 }}>"{currentCard?.example}"</div>
+                                        </>
+                                    )}
+                                </div>
+                                <div style={{ display: "flex", gap: 8, marginTop: 14, justifyContent: "center" }}>
+                                    <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => Math.max(0, i - 1)) }}>← Prev</button>
+                                    {fcFlip && (
+                                        <>
+                                            <button className="btn btn-sm" style={{ background: "rgba(255,94,135,.18)", color: "var(--rose)", border: "1px solid rgba(255,94,135,.3)" }} onClick={() => {
+                                                if (currentCard) updateMastery(currentCard, -1);
+                                                setFcFlip(false); setFcIdx(i => vocabCards.length > 0 ? Math.min(i + 1, vocabCards.length - 1) : 0);
+                                            }}>😐 Hard (−★)</button>
+                                            <button className="btn btn-sm" style={{ background: "rgba(52,211,153,.18)", color: "var(--green)", border: "1px solid rgba(52,211,153,.3)" }} onClick={() => {
+                                                if (currentCard) updateMastery(currentCard, 1);
+                                                setFcFlip(false); setFcIdx(i => vocabCards.length > 0 ? (i + 1) % vocabCards.length : 0);
+                                            }}>✓ Got it (+★)</button>
+                                        </>
+                                    )}
+                                    <button className="btn btn-gh" onClick={() => { setFcFlip(false); setFcIdx(i => vocabCards.length > 0 ? (i + 1) % vocabCards.length : 0) }}>Next →</button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                );
+            })()}
 
             {showLogModal && (
                 <div className="mo">

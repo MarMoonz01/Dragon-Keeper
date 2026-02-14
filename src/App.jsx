@@ -7,6 +7,9 @@ import AnalysisPage from './pages/AnalysisPage';
 import HatcheryPage from './pages/HatcheryPage';
 import IELTSPage from './pages/IELTSPage';
 import HealthPage from './pages/HealthPage';
+import ErrorBoundary from './components/ErrorBoundary';
+import OnboardingModal from './components/OnboardingModal';
+import NotificationManager from './components/NotificationManager';
 import { TASKS0, DRAGONS } from './data/constants';
 import { load, save, ai } from './utils/helpers';
 import { supabase } from './utils/supabaseClient';
@@ -17,7 +20,7 @@ export default function App() {
   const [showSettings, setShowSettings] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [dragon, setDragon] = useState({ xp: 0, level: 1 });
-  const [stats, setStats] = useState({ monstersDefeated: 0, streak: 0, healthScore: 0 });
+  const [stats, setStats] = useState({ monstersDefeated: 0, streak: 0, healthScore: 0, streakFreezes: 1 });
   const [health, setHealth] = useState({ sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 });
   const [toast, setToast] = useState(null);
   const [levelUp, setLevelUp] = useState(null);
@@ -28,12 +31,14 @@ export default function App() {
   const [dailyPlan, setDailyPlan] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [showCheckIn, setShowCheckIn] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
     load("nx-dragon").then(d => setDragon(d || { xp: 0, level: 1 }));
     load("nx-stats").then(d => setStats(d || { monstersDefeated: 0, streak: 0, healthScore: 0 }));
     load("nx-health").then(d => setHealth(d || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 }));
     load("nx-gcal").then(d => d && setGcal(d));
+    load("nx-onboarded").then(d => { if (!d) setShowOnboarding(true); });
 
     // Supabase check with try/catch safety
     if (supabase) {
@@ -120,13 +125,11 @@ Respond with ONLY the JSON array, no explanation.`;
 
       let streak = 0;
       const today = new Date();
-      // Start from yesterday (today hasn't ended yet)
       let checkDate = new Date(today);
       checkDate.setDate(checkDate.getDate() - 1);
 
       const dateSet = new Set(data.map(d => d.date));
 
-      // Check if today is already logged
       const todayStr = today.toISOString().split('T')[0];
       if (dateSet.has(todayStr)) {
         streak = 1;
@@ -134,18 +137,35 @@ Respond with ONLY the JSON array, no explanation.`;
         checkDate.setDate(checkDate.getDate() - 1);
       }
 
+      let freezesUsed = 0;
       while (true) {
         const dateStr = checkDate.toISOString().split('T')[0];
         if (dateSet.has(dateStr)) {
           streak++;
           checkDate.setDate(checkDate.getDate() - 1);
         } else {
-          break;
+          // Streak freeze: allow 1-day gap if freezes available
+          const prevDate = new Date(checkDate);
+          prevDate.setDate(prevDate.getDate() - 1);
+          const prevStr = prevDate.toISOString().split('T')[0];
+          if (dateSet.has(prevStr) && freezesUsed < (stats.streakFreezes || 1)) {
+            freezesUsed++;
+            streak++; // Count the freeze day as a streak day
+            checkDate.setDate(checkDate.getDate() - 2); // Skip the gap
+          } else {
+            break;
+          }
         }
       }
 
+      // Award new freezes at milestones
+      let bonusFreezes = 0;
+      if (streak >= 30) bonusFreezes = 3;
+      else if (streak >= 14) bonusFreezes = 2;
+      else if (streak >= 7) bonusFreezes = 1;
+
       setStats(prev => {
-        const updated = { ...prev, streak };
+        const updated = { ...prev, streak, streakFreezes: Math.max(prev.streakFreezes || 1, bonusFreezes) - freezesUsed };
         save("nx-stats", updated);
         return updated;
       });
@@ -272,10 +292,29 @@ Respond in this JSON format:
   const addTask = t => {
     setTasks(prev => {
       const u = [...prev, t];
-      updateTaskStatus(u); // Use new helper
+      updateTaskStatus(u);
       return u;
     });
     showToast("✅", "Task Added", t.name);
+  };
+
+  const editTask = (id, updates) => {
+    setTasks(prev => {
+      const u = prev.map(t => t.id === id ? { ...t, ...updates } : t);
+      updateTaskStatus(u);
+      return u;
+    });
+    showToast("✏️", "Task Updated", updates.name || "Changes saved");
+  };
+
+  const deleteTask = id => {
+    setTasks(prev => {
+      const t = prev.find(x => x.id === id);
+      const u = prev.filter(x => x.id !== id);
+      updateTaskStatus(u);
+      if (t) showToast("🗑️", "Task Deleted", t.name);
+      return u;
+    });
   };
 
   const onDefeat = reward => {
@@ -303,7 +342,14 @@ Respond in this JSON format:
     showToast("📤", "Synced!", tasks.filter(t => t.calSync).length + " tasks pushed to Google Calendar");
   };
 
-  const saveHealth = h => { setHealth(h); save("nx-health", h); showToast("❤️", "Health Saved", "Data will inform tomorrow's AI schedule"); };
+  const saveHealth = h => {
+    const { healthScore, ...healthData } = h;
+    setHealth(healthData); save("nx-health", healthData);
+    if (healthScore !== undefined) {
+      setStats(prev => { const u = { ...prev, healthScore }; save("nx-stats", u); return u; });
+    }
+    showToast("❤️", "Health Saved", "Data will inform tomorrow's AI schedule");
+  };
 
   return (
     <>
@@ -313,7 +359,7 @@ Respond in this JSON format:
         <main className="main">
           {page === "dashboard" && (
             <>
-              <Dashboard tasks={tasks} onComplete={completeTask} dragon={dragon} streak={stats.streak || 0} onAdd={addTask} gcal={gcal} onConnect={onGcalConnect} onPush={onGcalPush} pushing={gcalPushing} stats={stats} />
+              <Dashboard tasks={tasks} onComplete={completeTask} dragon={dragon} streak={stats.streak || 0} onAdd={addTask} onEdit={editTask} onDelete={deleteTask} gcal={gcal} onConnect={onGcalConnect} onPush={onGcalPush} pushing={gcalPushing} stats={stats} />
               <div style={{ padding: "0 24px 24px" }}>
                 <button className="btn btn-gh" style={{ width: "100%", justifyContent: "center", border: "1px dashed var(--bdr)", padding: 12 }} onClick={handleEndDay} disabled={analyzing}>
                   {analyzing ? "🌙 Analysing Day..." : "🌙 End Day & Analyze Performance"}
@@ -321,9 +367,9 @@ Respond in this JSON format:
               </div>
             </>
           )}
-          {page === "analysis" && <AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={stats.streak || 0} />}
+          {page === "analysis" && <ErrorBoundary><AnalysisPage tasks={tasks} dragon={dragon} stats={stats} streak={stats.streak || 0} /></ErrorBoundary>}
           {page === "hatchery" && <HatcheryPage tasks={tasks} dragon={dragon} stats={stats} onDefeat={onDefeat} streak={stats.streak || 0} />}
-          {page === "ielts" && <IELTSPage />}
+          {page === "ielts" && <ErrorBoundary><IELTSPage /></ErrorBoundary>}
           {page === "health" && <HealthPage health={health} onSave={saveHealth} />}
         </main>
       </div>
@@ -345,7 +391,9 @@ Respond in this JSON format:
       </div>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} onReset={resetGame} />}
-      {showCheckIn && <DailyCheckInModal onClose={() => setShowCheckIn(false)} onSave={endDay} />}
+      {showCheckIn && <DailyCheckInModal onClose={() => setShowCheckIn(false)} onSave={endDay} analyzing={analyzing} />}
+      {showOnboarding && <OnboardingModal onComplete={() => setShowOnboarding(false)} />}
+      <NotificationManager tasks={tasks} />
 
       {toast && (
         <div className="toast">
