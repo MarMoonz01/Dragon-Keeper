@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { supabase } from './supabaseClient';
 
 export interface Message {
@@ -61,7 +62,7 @@ export async function ai(messages: Message[], system?: string): Promise<string> 
 
     // --- LOCAL DEVELOPMENT FALLBACKS (Client-Side Keys) ---
     const settings = load("nx-settings");
-    const provider = settings?.provider || "claude";
+    const provider = settings?.provider || "gemini";
 
     // Key Selection Logic
     let apiKey = "";
@@ -84,7 +85,7 @@ export async function ai(messages: Message[], system?: string): Promise<string> 
                 parts: [{ text: m.content }]
             }));
 
-            const modelId = "gemini-3-flash-preview";
+            const modelId = "gemini-1.5-pro";
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelId}:generateContent?key=${apiKey}`;
 
             const payload: any = {

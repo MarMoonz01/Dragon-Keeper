@@ -15,25 +15,37 @@ export default function EssayWriter() {
         const criteria = writingTask === 1 ? "Task Achievement" : "Task Response";
         const type = writingTask === 1 ? "Academic Writing Task 1 (Report)" : "Academic Writing Task 2 (Essay)";
 
-        const r = await ai([{
-            role: "user", content: `Score this IELTS ${type} (${wc} words).
+        const systemPrompt = `You are an expert IELTS Examiner (Band 9.0). 
+        Analyze the following ${type}.
+        Provide a strict evaluation based on: 
+        1. ${criteria}
+        2. Coherence & Cohesion
+        3. Lexical Resource
+        4. Grammatical Range & Accuracy.
         
-ESSAY:
-${essay}
+        Return JSON format only: 
+        { "band": number, "breakdown": { "tr": number, "cc": number, "lr": number, "gra": number }, "feedback": "string (strengths)", "corrections": ["improvement point 1", "improvement point 2"] }`;
 
-Respond in this EXACT format only:
-TA: [0-9 score] (Score for ${criteria})
-CC: [0-9 score]
-LR: [0-9 score]
-GR: [0-9 score]
-OVERALL: [0-9 score]
-STRENGTHS: [one line]
-IMPROVE: [two bullet points]` }],
-            "You are a certified IELTS examiner. Score accurately on the 9-band scale. Be specific and constructive.");
+        try {
+            const r = await ai([{ role: "user", content: `Topic: ${type}\n\nEssay (${wc} words):\n${essay}` }], systemPrompt);
 
-        const get = k => { const m = r.match(new RegExp(k + ":\\s*([\\d.]+)")); return m ? parseFloat(m[1]) : 6.0; };
-        const getS = k => { const m = r.match(new RegExp(k + ":\\s*(.+)")); return m ? m[1].trim() : ""; };
-        setScores({ ta: get("TA"), cc: get("CC"), lr: get("LR"), gr: get("GR"), overall: get("OVERALL"), strengths: getS("STRENGTHS"), improve: getS("IMPROVE") });
+            // Clean up code blocks if present
+            const jsonStr = r.replace(/```json/g, '').replace(/```/g, '').trim();
+            const data = JSON.parse(jsonStr);
+
+            setScores({
+                ta: data.breakdown.tr,
+                cc: data.breakdown.cc,
+                lr: data.breakdown.lr,
+                gr: data.breakdown.gra,
+                overall: data.band,
+                strengths: data.feedback,
+                improve: data.corrections.join("\n")
+            });
+        } catch (e) {
+            console.error("Scoring failed", e);
+            alert("Scoring failed. Please try again.");
+        }
         setScoring(false);
     };
 
@@ -53,7 +65,7 @@ IMPROVE: [two bullet points]` }],
                     <button className={"btn " + (writingTask === 1 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(1)}>Task 1 (Report)</button>
                     <button className={"btn " + (writingTask === 2 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(2)}>Task 2 (Essay)</button>
                 </div>
-                <div className="ct">✍️ AI Writing Evaluator (Claude)</div>
+                <div className="ct">✍️ AI Writing Evaluator (Gemini 1.5 Pro)</div>
                 <div className="ins" style={{ marginBottom: 14 }}>
                     <span className="ins-ic">📋</span>
                     <span>
@@ -71,7 +83,7 @@ IMPROVE: [two bullet points]` }],
                         {scoring ? "🤖 Scoring..." : "🤖 AI Score Essay"}
                     </button>
                 </div>
-                {scoring && <div style={{ marginTop: 12 }}><Loader text="Claude is evaluating your essay..." /></div>}
+                {scoring && <div style={{ marginTop: 12 }}><Loader text="Gemini is evaluating your essay..." /></div>}
                 {scores && !scoring && (
                     <div style={{ marginTop: 16 }}>
                         <div style={{ textAlign: "center", marginBottom: 14 }}>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ZONES, ZONE_MILESTONES, DRAGONS } from '../data/constants';
+import { load, save } from '../utils/helpers';
 import MapNode from '../components/MapNode';
 
 const BOSS_SIZE = 72;
@@ -255,18 +256,7 @@ export default function WorldMapPage({ dragon, stats, showToast, onXP }) {
 
     return (
         <div className="wmap-page" style={{ height: "100vh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
-            <style>{`
-                @media (min-width: 768px) {
-                    .wmap-layout { display: flex; flex: 1; overflow: hidden; }
-                    .wmap-main { flex: 1; position: relative; display: flex; flexDirection: column; }
-                    .wmap-sidebar { width: 300px; border-left: 1px solid var(--bdr); background: var(--bg-card); display: flex; flex-direction: column; }
-                }
-                @media (max-width: 767px) {
-                    .wmap-layout { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
-                    .wmap-main { flex: 1; position: relative; display: flex; flexDirection: column; }
-                    .wmap-sidebar { display: none; }
-                }
-            `}</style>
+
 
             {/* Header */}
             <div className="wm-header" style={{ flexShrink: 0 }}>

@@ -1,5 +1,20 @@
 import { useEffect, useRef } from 'react';
 
+const getIconFromEmoji = (emoji) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 64;
+    canvas.height = 64;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+
+    ctx.font = "48px serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 32, 32);
+
+    return canvas.toDataURL();
+};
+
 export default function NotificationManager({ tasks }) {
     const prevNotified = useRef(new Set());
 
@@ -26,7 +41,7 @@ export default function NotificationManager({ tasks }) {
                     prevNotified.current.add(t.id);
                     new Notification("⏰ NEXUS Reminder", {
                         body: `Time for: ${t.name}`,
-                        icon: "🐉",
+                        icon: getIconFromEmoji("🐲"),
                         tag: "nexus-" + t.id
                     });
                 }

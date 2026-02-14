@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 
 export default function FocusPage({ task, onComplete, onExit }) {
-    const DURATION = 25 * 60; // 25 minutes
-    // const DURATION = 5; // Debug: 5 seconds
+    const DURATION = 25 * 60;
     const [timeLeft, setTimeLeft] = useState(DURATION);
+    const [isActive, setIsActive] = useState(true);
     const [finished, setFinished] = useState(false);
 
     useEffect(() => {
@@ -11,19 +11,25 @@ export default function FocusPage({ task, onComplete, onExit }) {
             onExit();
             return;
         }
+    }, [task, onExit]);
 
-        const t = setInterval(() => {
-            setTimeLeft(p => {
-                if (p <= 1) {
-                    clearInterval(t);
+    useEffect(() => {
+        if (!isActive) return;
+
+        const interval = setInterval(() => {
+            setTimeLeft((prev) => {
+                if (prev <= 1) {
+                    clearInterval(interval);
+                    setIsActive(false);
                     setFinished(true);
                     return 0;
                 }
-                return p - 1;
+                return prev - 1;
             });
         }, 1000);
-        return () => clearInterval(t);
-    }, []);
+
+        return () => clearInterval(interval);
+    }, [isActive]);
 
     const handleFinish = () => {
         onComplete(task.id);
@@ -45,7 +51,7 @@ export default function FocusPage({ task, onComplete, onExit }) {
 
             {/* Coffee Animation */}
             <div style={{ position: "relative", width: 180, margin: "0 auto" }}>
-                {timeLeft > 0 && (
+                {isActive && (
                     <div className="coffee-steam" style={{ position: "absolute", top: -40, left: 30, display: "flex", gap: 8 }}>
                         <div className="steam-puff" style={{ animationDelay: "0s" }} />
                         <div className="steam-puff" style={{ animationDelay: "0.5s" }} />
@@ -96,9 +102,14 @@ export default function FocusPage({ task, onComplete, onExit }) {
                         ☕ Task Complete!
                     </button>
                 ) : (
-                    <button className="btn btn-gh" onClick={onExit} style={{ color: "var(--t3)" }}>
-                        Give Up (Exit Focus)
-                    </button>
+                    <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                        <button className="btn btn-gh" onClick={() => setIsActive(!isActive)} style={{ width: 120 }}>
+                            {isActive ? "⏸ Pause" : "▶ Resume"}
+                        </button>
+                        <button className="btn btn-gh" onClick={onExit} style={{ color: "var(--rose)", width: 120 }}>
+                            Quit
+                        </button>
+                    </div>
                 )}
             </div>
         </div>
