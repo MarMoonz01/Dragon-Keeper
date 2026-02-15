@@ -798,6 +798,19 @@ select.inp {
   font-size: 11px
 }
 
+.join {
+  display: flex;
+  gap: 2px;
+}
+
+.join .btn:first-child {
+  border-radius: 9px 4px 4px 9px;
+}
+
+.join .btn:last-child {
+  border-radius: 4px 9px 9px 4px;
+}
+
 .mch {
   display: flex;
   justify-content: space-between;

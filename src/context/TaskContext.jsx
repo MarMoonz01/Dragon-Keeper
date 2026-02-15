@@ -31,7 +31,7 @@ export function TaskProvider({ children }) {
         }
     }, []);
 
-    const showToast = (icon, title, msg) => { setToast({ icon, title, msg }); setTimeout(() => setToast(null), 3500); };
+    const showToast = useCallback((icon, title, msg) => { setToast({ icon, title, msg }); setTimeout(() => setToast(null), 3500); }, []);
 
     const fetchDailyPlan = async () => {
         const today = new Date().toISOString().split('T')[0];
@@ -67,6 +67,12 @@ export function TaskProvider({ children }) {
                 : "No profile set.";
 
             // 3. AI Generation
+            let patternCtx = "";
+            if (supabase) {
+                const { getWeeklyPatterns } = await import('../utils/patternAnalysis');
+                patternCtx = await getWeeklyPatterns(supabase);
+            }
+
             const context = history
                 ? `Yesterday: ${history.summary || 'No summary'}. Mood: ${history.mood || 'Unknown'}. Score: ${history.productivity_score || 0}%. Completed: ${(history.completed_tasks || []).map(t => t.name).join(', ') || 'none'}.`
                 : 'First day — no history yet.';
@@ -76,6 +82,7 @@ export function TaskProvider({ children }) {
 
             const prompt = `Generate today's daily plan. ${profileCtx}
 Context: ${context}
+${patternCtx ? `Weekly Patterns: ${patternCtx}` : ""}
 Create exactly 10 tasks as a JSON array. Each task must have:
 - id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
 Schedule tasks ONLY between ${String(wakeH).padStart(2, "0")}:00-${String(sleepH).padStart(2, "0")}:00. ${profile?.goals?.includes("ielts") ? "Front-load IELTS before noon." : ""} Include health, work, and mindfulness tasks. Mix categories.

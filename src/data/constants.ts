@@ -14,6 +14,7 @@ export interface Dragon {
     name: string;
     em: string;
     trait: string;
+    minBand?: number;
 }
 
 export interface Monster {
@@ -22,6 +23,7 @@ export interface Monster {
     maxHp: number;
     reward: number;
     level: number;
+    type?: 'boss' | 'normal';
 }
 
 export interface Achievement {
@@ -30,6 +32,7 @@ export interface Achievement {
     name: string;
     desc: string;
     max: number;
+    tier: 'bronze' | 'silver' | 'gold' | 'platinum';
     prog: (tasks: Task[], doneTasks: Task[], stats: any) => number;
 }
 
@@ -47,11 +50,13 @@ export const TASKS0: Task[] = [
 ];
 
 export const DRAGONS: Dragon[] = [
-    { lv: 1, name: "Ember Hatchling", em: "🥚", trait: "Curious & fragile" },
-    { lv: 3, name: "Spark Whelp", em: "🐣", trait: "First flames appear" },
-    { lv: 6, name: "Flame Fledgling", em: "🐲", trait: "Wings growing stronger" },
-    { lv: 10, name: "Blaze Drake", em: "🔥", trait: "Fierce and confident" },
-    { lv: 15, name: "Inferno Wyrm", em: "🐉", trait: "Ancient power awakens" },
+    { lv: 1, minBand: 0, name: "Ember Hatchling", em: "🥚", trait: "Curious & fragile" },
+    { lv: 3, minBand: 0, name: "Spark Whelp", em: "🐣", trait: "First flames appear" },
+    { lv: 6, minBand: 6.0, name: "Flame Fledgling", em: "🐲", trait: "Wings growing stronger" },
+    { lv: 10, minBand: 6.5, name: "Blaze Drake", em: "🔥", trait: "Fierce and confident" },
+    { lv: 15, minBand: 7.0, name: "Inferno Wyrm", em: "🐉", trait: "Ancient power awakens" },
+    { lv: 20, minBand: 7.5, name: "Solar Leviathan", em: "🌞", trait: "Radiates the sun's power" },
+    { lv: 30, minBand: 8.0, name: "Cosmic Elder", em: "🌌", trait: "One with the universe" },
 ];
 
 export interface DragonSkill {
@@ -65,26 +70,92 @@ export interface DragonSkill {
 export const DRAGON_SKILLS: DragonSkill[] = [
     { band: 5.5, skill: "Ember Shield", desc: "Basic protection", xpMultiplier: 1.0, em: "🛡️" },
     { band: 6.0, skill: "Flame Tongue", desc: "Words grow sharper", xpMultiplier: 1.1, em: "🗡️" },
-    { band: 6.5, skill: "Scholar's Eye", desc: "Reading comprehension deepens", xpMultiplier: 1.2, em: "👁️" },
-    { band: 7.0, skill: "Dragon's Absorption", desc: "Absorb 1.5× monster XP", xpMultiplier: 1.5, em: "💎" },
+    { band: 6.5, skill: "Scholar's Eye", desc: "Reading comprehension deepens", xpMultiplier: 1.25, em: "👁️" },
+    { band: 7.0, skill: "Dragon's Greed", desc: "Absorb 1.5× monster XP", xpMultiplier: 1.5, em: "💎" },
     { band: 7.5, skill: "Ancient Wisdom", desc: "XP doubled from IELTS tasks", xpMultiplier: 1.75, em: "📜" },
-    { band: 8.0, skill: "Sovereign's Aura", desc: "All XP ×2", xpMultiplier: 2.0, em: "👑" },
+    { band: 8.0, skill: "Sovereign's Aura", desc: "All XP ×2.0", xpMultiplier: 2.0, em: "👑" },
+    { band: 8.5, skill: "Mythic Presence", desc: "All XP ×2.5", xpMultiplier: 2.5, em: "🌟" },
+    { band: 9.0, skill: "God Tier", desc: "All XP ×3.0", xpMultiplier: 3.0, em: "⚡" },
 ];
 
 export const MONSTERS: Monster[] = [
     { name: "Procrastination Goblin", em: "👺", maxHp: 80, reward: 50, level: 1 },
     { name: "Fatigue Wraith", em: "👻", maxHp: 120, reward: 75, level: 2 },
     { name: "Distraction Demon", em: "😈", maxHp: 160, reward: 100, level: 3 },
-    { name: "Burnout Dragon", em: "🦕", maxHp: 220, reward: 160, level: 4 },
+    { name: "Burnout Dragon", em: "🦕", maxHp: 220, reward: 160, level: 4, type: 'boss' },
+    { name: "Chaos Hydra", em: "🐍", maxHp: 300, reward: 250, level: 5, type: 'boss' },
+    { name: "Void Titan", em: "👾", maxHp: 500, reward: 500, level: 10, type: 'boss' },
 ];
 
+export const SHOP_ITEMS = [
+    { id: "freeze", name: "Streak Freeze", em: "🧊", desc: "Protect your streak for one day.", cost: 200 },
+    { id: "boost", name: "2× XP Potion", em: "⚡", desc: "Double XP for 24 hours.", cost: 300 },
+    { id: "reset", name: "Schedule Reset", em: "📅", desc: "Reroll your daily tasks.", cost: 100 },
+    { id: "heal", name: "Full Heal", em: "💖", desc: "Restore Dragon HP to max.", cost: 150 },
+];
+
+export const CHALLENGE_TEMPLATES = {
+    daily: [
+        { id: "d_ielts", text: "Complete 3 IELTS tasks", target: 3, reward: 50, type: "ielts" },
+        { id: "d_health", text: "Complete 3 Health tasks", target: 3, reward: 40, type: "health" },
+        { id: "d_focus", text: "Complete 2 Deep Work blocks", target: 2, reward: 60, type: "work" },
+        { id: "d_mind", text: "Do 1 Mindfulness session", target: 1, reward: 30, type: "mind" },
+        { id: "d_all", text: "Finish 5 tasks total", target: 5, reward: 50, type: "any" },
+        { id: "d_xp", text: "Gain 200 XP", target: 200, reward: 40, type: "xp" },
+    ],
+    weekly: [
+        { id: "w_monster", text: "Defeat 5 Monsters", target: 5, reward: 300, type: "monster" },
+        { id: "w_streak", text: "Maintain 7-day Streak", target: 7, reward: 500, type: "streak" },
+        { id: "w_ielts", text: "Complete 15 IELTS tasks", target: 15, reward: 400, type: "ielts" },
+        { id: "w_vocab", text: "Add 20 new words to Notebook", target: 20, reward: 250, type: "vocab" },
+    ]
+};
+
 export const ACHIEVEMENTS: Achievement[] = [
-    { id: "first", em: "🌟", name: "First Light", desc: "Complete your first task", max: 1, prog: (_, d) => d.filter(x => x.done).length },
-    { id: "scholar", em: "📚", name: "IELTS Scholar", desc: "Complete 10 IELTS tasks", max: 10, prog: (_, d) => d.filter(x => x.cat === "ielts" && x.done).length },
-    { id: "warrior", em: "⚔️", name: "Battle Warrior", desc: "Defeat 3 monsters", max: 3, prog: (_, _2, s) => s.monstersDefeated || 0 },
-    { id: "streak7", em: "🔥", name: "Week Warrior", desc: "7-day streak", max: 7, prog: (_, _2, s) => s.streak || 0 },
-    { id: "lvl10", em: "💎", name: "Dragon Master", desc: "Reach Level 10", max: 10, prog: (_, _2, s) => s.dragonLevel || 1 },
-    { id: "health20", em: "❤️", name: "Health Champion", desc: "20 health tasks done", max: 20, prog: (_, d) => d.filter(x => x.cat === "health" && x.done).length },
+    // Streak
+    { id: "streak_b", em: "🔥", name: "Spark Starter", desc: "3-day streak", max: 3, tier: "bronze", prog: (_, _2, s) => s.streak || 0 },
+    { id: "streak_s", em: "🔥🔥", name: "Week Warrior", desc: "7-day streak", max: 7, tier: "silver", prog: (_, _2, s) => s.streak || 0 },
+    { id: "streak_g", em: "🔥🔥🔥", name: "Monthly Master", desc: "30-day streak", max: 30, tier: "gold", prog: (_, _2, s) => s.streak || 0 },
+    { id: "streak_p", em: "💎", name: "Centurion", desc: "100-day streak", max: 100, tier: "platinum", prog: (_, _2, s) => s.streak || 0 },
+
+    // Tasks (Total)
+    { id: "tasks_b", em: "📝", name: "Getting Started", desc: "Complete 10 tasks", max: 10, tier: "bronze", prog: (_, _2, s) => s.totalTasksStr || 0 },
+    { id: "tasks_s", em: "📝", name: "Productivity Machine", desc: "Complete 100 tasks", max: 100, tier: "silver", prog: (_, _2, s) => s.totalTasksStr || 0 },
+    { id: "tasks_g", em: "📝", name: "Task Titan", desc: "Complete 1000 tasks", max: 1000, tier: "gold", prog: (_, _2, s) => s.totalTasksStr || 0 },
+
+    // IELTS
+    { id: "ielts_b", em: "📚", name: "Student", desc: "10 IELTS tasks done", max: 10, tier: "bronze", prog: (_, _2, s) => s.ieltsTasks || 0 },
+    { id: "ielts_s", em: "🎓", name: "Scholar", desc: "50 IELTS tasks done", max: 50, tier: "silver", prog: (_, _2, s) => s.ieltsTasks || 0 },
+    { id: "ielts_g", em: "🏛️", name: "Professor", desc: "200 IELTS tasks done", max: 200, tier: "gold", prog: (_, _2, s) => s.ieltsTasks || 0 },
+
+    // Writing
+    { id: "write_b", em: "✍️", name: "Scribe", desc: "Write 5 essays", max: 5, tier: "bronze", prog: (_, _2, s) => s.essaysWritten || 0 },
+    { id: "write_s", em: "🖋️", name: "Author", desc: "Write 20 essays", max: 20, tier: "silver", prog: (_, _2, s) => s.essaysWritten || 0 },
+    { id: "write_g", em: "📜", name: "Novelist", desc: "Write 50 essays", max: 50, tier: "gold", prog: (_, _2, s) => s.essaysWritten || 0 },
+
+    // Monsters
+    { id: "mon_b", em: "⚔️", name: "Fighter", desc: "Defeat 3 monsters", max: 3, tier: "bronze", prog: (_, _2, s) => s.monstersDefeated || 0 },
+    { id: "mon_s", em: "🏰", name: "Knight", desc: "Defeat 20 monsters", max: 20, tier: "silver", prog: (_, _2, s) => s.monstersDefeated || 0 },
+    { id: "mon_g", em: "🐉", name: "Dragonslayer", desc: "Defeat 100 monsters", max: 100, tier: "gold", prog: (_, _2, s) => s.monstersDefeated || 0 },
+
+    // Health
+    { id: "fit_b", em: "🏃", name: "Mover", desc: "20 Health tasks", max: 20, tier: "bronze", prog: (_, _2, s) => s.healthTasks || 0 },
+    { id: "fit_s", em: "💪", name: "Athlete", desc: "100 Health tasks", max: 100, tier: "silver", prog: (_, _2, s) => s.healthTasks || 0 },
+
+    // Focus / Work
+    { id: "focus_b", em: "🧠", name: "Concentrated", desc: "10 Deep Work blocks", max: 10, tier: "bronze", prog: (_, _2, s) => s.workTasks || 0 },
+    { id: "focus_s", em: "⚡", name: "Flow State", desc: "50 Deep Work blocks", max: 50, tier: "silver", prog: (_, _2, s) => s.workTasks || 0 },
+
+    // Level
+    { id: "lvl_b", em: "🐣", name: "Hatchling", desc: "Reach Level 5", max: 5, tier: "bronze", prog: (_, _2, s) => s.dragonLevel || 1 },
+    { id: "lvl_s", em: "🐲", name: "Drake", desc: "Reach Level 10", max: 10, tier: "silver", prog: (_, _2, s) => s.dragonLevel || 1 },
+    { id: "lvl_g", em: "🐲", name: "Wyrm", desc: "Reach Level 20", max: 20, tier: "gold", prog: (_, _2, s) => s.dragonLevel || 1 },
+    { id: "lvl_p", em: "👑", name: "Ascended", desc: "Reach Level 50", max: 50, tier: "platinum", prog: (_, _2, s) => s.dragonLevel || 1 },
+
+    // Social / Hidden
+    { id: "social_b", em: "👋", name: "Connector", desc: "Complete 5 Social tasks", max: 5, tier: "bronze", prog: (_, _2, s) => s.socialTasks || 0 },
+    { id: "early_bird", em: "🌅", name: "Early Bird", desc: "Complete a task before 7am", max: 1, tier: "silver", prog: (_, _2, s) => s.earlyBird || 0 },
+    { id: "night_owl", em: "🦉", name: "Night Owl", desc: "Complete a task after 11pm", max: 1, tier: "silver", prog: (_, _2, s) => s.nightOwl || 0 },
 ];
 
 export const VOCAB = [
@@ -124,8 +195,6 @@ export const ZONES = [
     { id: "mindful", name: "Mindful Peaks", ic: "🧘", color: "#fccb58", desc: "Mind & meditation", goalLabel: "Mindfulness Goal Date" }
 ];
 
-// Milestones are ordered bottom-to-top. Positions auto-calculated.
-// weight determines % of time allocated to reach this milestone.
 export const ZONE_MILESTONES = {
     scholar: [
         { key: "start", em: "🌅", title: "Diagnostic Test", desc: "Take a full practice test to find your baseline.", type: "normal", reward: 30, weight: 1 },

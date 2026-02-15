@@ -1,11 +1,17 @@
 import React, { useState } from 'react';
 import { ai } from '../../utils/helpers';
+import Loader from '../Loader';
 
 export default function Notebook({ notebook, setNotebook, addToNotebook, fetchNotebook, supabase }) {
     const [nbTab, setNbTab] = useState("vocab");
+    const [filterTopic, setFilterTopic] = useState("All");
     const [genNb, setGenNb] = useState(false);
     const [nbInput, setNbInput] = useState("");
     const [genVocab, setGenVocab] = useState(false);
+    const [selectedTopic, setSelectedTopic] = useState("Technology");
+
+    // Extract unique topics from notebook for filter
+    const uniqueTopics = ["All", ...new Set(notebook.filter(n => n.topic_tag).map(n => n.topic_tag))];
 
     const generateKnowledge = async () => {
         if (!nbInput.trim()) return;
@@ -14,7 +20,7 @@ export default function Notebook({ notebook, setNotebook, addToNotebook, fetchNo
         let sys = "You are an expert language tutor.";
 
         if (nbTab === "vocab") {
-            prompt = `Analyze the word/phrase: "${nbInput}".\nRespond in this EXACT format:\nWORD: ${nbInput}\nPHONETIC: [IPA]\nTYPE: [part of speech]\nDEF: [definition]\nEXAMPLE: [sentence]\nMASTERY: 1`;
+            prompt = `Analyze the word/phrase: "${nbInput}".\nRespond in this EXACT format:\nWORD: ${nbInput}\nPHONETIC: [IPA]\nTYPE: [part of speech]\nDEF: [definition]\nEXAMPLE: [sentence]\nTOPIC: [One word topic e.g. Health/Tech/General]\nMASTERY: 1`;
         } else if (nbTab === "conv") {
             prompt = `Create a short conversation usage for: "${nbInput}".\nRespond in this EXACT format:\nTOPIC: ${nbInput}\nCONTEXT: [situation]\nA: [Speaker A line]\nB: [Speaker B line]\nNUANCE: [explanation of usage/tone]`;
         } else {
@@ -28,7 +34,16 @@ export default function Notebook({ notebook, setNotebook, addToNotebook, fetchNo
             let newItem = { category: nbTab, created_at: new Date().toISOString(), original: nbInput };
 
             if (nbTab === "vocab") {
-                newItem = { ...newItem, word: get("WORD") || nbInput, phonetic: get("PHONETIC"), type: get("TYPE"), def: get("DEF"), example: get("EXAMPLE"), mastery: 1 };
+                newItem = {
+                    ...newItem,
+                    word: get("WORD") || nbInput,
+                    phonetic: get("PHONETIC"),
+                    type: get("TYPE"),
+                    def: get("DEF"),
+                    example: get("EXAMPLE"),
+                    topic_tag: get("TOPIC") || "General",
+                    mastery: 1
+                };
             } else if (nbTab === "conv") {
                 newItem = { ...newItem, topic: get("TOPIC"), context: get("CONTEXT"), a: get("A"), b: get("B"), nuance: get("NUANCE") };
             } else {
@@ -43,74 +58,126 @@ export default function Notebook({ notebook, setNotebook, addToNotebook, fetchNo
         setGenNb(false);
     };
 
-    const generateDailyVocab = async () => {
+    const generateTopicPack = async () => {
         setGenVocab(true);
-        const r = await ai([{ role: "user", content: "Generate 5 advanced IELTS vocabulary words (C1/C2 level) that are useful for high-scoring essays/speaking.\n\nRespond in this EXACT format for each word (separated by '---'):\nWORD: [word]\nPHONETIC: [IPA]\nTYPE: [noun/verb/adj/etc.]\nDEF: [short definition]\nEXAMPLE: [sentence using the word]\nMASTERY: 1" }],
-            "You are an IELTS expert tutor.");
+        const prompt = `Generate 5 advanced IELTS vocabulary words related to the topic "${selectedTopic}" (C1/C2 level).
+        Respond in this EXACT format for each word (separated by '---'):
+        WORD: [word]
+        PHONETIC: [IPA]
+        TYPE: [noun/verb/adj/etc.]
+        DEF: [short definition]
+        EXAMPLE: [sentence regarding ${selectedTopic}]
+        TOPIC: ${selectedTopic}
+        MASTERY: 1`;
 
-        const newWords = r.split("---").map(chunk => {
-            const get = k => { const m = chunk.match(new RegExp(k + ":\\s*(.+)")); return m ? m[1].trim() : ""; };
-            if (!get("WORD")) return null;
-            return { word: get("WORD"), phonetic: get("PHONETIC"), type: get("TYPE"), def: get("DEF"), example: get("EXAMPLE"), mastery: 1, category: 'vocab', created_at: new Date().toISOString() };
-        }).filter(w => w);
+        try {
+            const r = await ai([{ role: "user", content: prompt }], "You are an IELTS expert tutor.");
 
-        if (newWords.length > 0) {
-            if (supabase) {
-                const { error } = await supabase.from('notebook').insert(newWords);
-                if (error) console.error("Error saving batch notebook:", error);
-                else fetchNotebook();
-            } else {
-                setNotebook(prev => [...newWords, ...prev]);
+            const newWords = r.split("---").map(chunk => {
+                const get = k => { const m = chunk.match(new RegExp(k + ":\\s*(.+)")); return m ? m[1].trim() : ""; };
+                if (!get("WORD")) return null;
+                return {
+                    word: get("WORD"),
+                    phonetic: get("PHONETIC"),
+                    type: get("TYPE"),
+                    def: get("DEF"),
+                    example: get("EXAMPLE"),
+                    topic_tag: get("TOPIC") || selectedTopic,
+                    mastery: 1,
+                    category: 'vocab',
+                    created_at: new Date().toISOString()
+                };
+            }).filter(w => w);
+
+            if (newWords.length > 0) {
+                if (supabase) {
+                    const { error } = await supabase.from('notebook').insert(newWords);
+                    if (error) console.error("Error saving batch notebook:", error);
+                    else fetchNotebook();
+                } else {
+                    setNotebook(prev => [...newWords, ...prev]);
+                }
             }
+        } catch (e) {
+            console.error(e);
         }
         setGenVocab(false);
     };
 
-    const filtered = notebook.filter(i => i.category === nbTab);
+    const filtered = notebook.filter(i => {
+        if (filterTopic !== "All" && i.topic_tag !== filterTopic) return false;
+        return i.category === nbTab;
+    });
 
     return (
         <div>
+            {/* Controls Tab */}
             <div className="card" style={{ marginBottom: 16, background: "var(--card2)", border: "1px solid var(--teal)" }}>
-                <div style={{ display: "flex", gap: 10, marginBottom: 10 }}>
-                    {["vocab", "conv", "grammar"].map(t => (
-                        <button key={t} onClick={() => setNbTab(t)} style={{
-                            padding: "6px 12px", borderRadius: 20, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer",
-                            background: nbTab === t ? "var(--teal)" : "rgba(255,255,255,0.05)",
-                            color: nbTab === t ? "#000" : "var(--t2)"
-                        }}>
-                            {t.toUpperCase()}
-                        </button>
-                    ))}
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", gap: 8 }}>
+                        {["vocab", "conv", "grammar"].map(t => (
+                            <button key={t} onClick={() => setNbTab(t)} style={{
+                                padding: "6px 12px", borderRadius: 20, border: "none", fontSize: 11, fontWeight: 700, cursor: "pointer",
+                                background: nbTab === t ? "var(--teal)" : "rgba(255,255,255,0.05)",
+                                color: nbTab === t ? "#000" : "var(--t2)",
+                                textTransform: "uppercase"
+                            }}>
+                                {t}
+                            </button>
+                        ))}
+                    </div>
+
+                    {nbTab === "vocab" && (
+                        <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
+                            <select className="inp" style={{ width: 120, margin: 0, height: 28, fontSize: 11, padding: "0 8px" }} value={filterTopic} onChange={e => setFilterTopic(e.target.value)}>
+                                {uniqueTopics.map(t => <option key={t} value={t}>{t}</option>)}
+                            </select>
+                            <span style={{ fontSize: 11, color: "var(--t2)" }}>Filter</span>
+                        </div>
+                    )}
                 </div>
+
                 <div style={{ display: "flex", gap: 10 }}>
                     <input
                         className="inp"
-                        placeholder={nbTab === "vocab" ? "Enter word (e.g. Serendipity)..." : nbTab === "conv" ? "Enter topic (e.g. Checking into hotel)..." : "Enter grammar rule (e.g. Past Perfect)..."}
+                        placeholder={nbTab === "vocab" ? "Enter word..." : nbTab === "conv" ? "Enter topic..." : "Enter grammar rule..."}
                         value={nbInput}
                         onChange={e => setNbInput(e.target.value)}
                         onKeyDown={e => e.key === 'Enter' && generateKnowledge()}
+                        style={{ flex: 1 }}
                     />
                     <button className="btn btn-g" onClick={generateKnowledge} disabled={genNb || !nbInput.trim()}>
-                        {genNb ? "✨ Magic..." : "✨ Add + AI Explain"}
+                        {genNb ? "✨..." : "✨ Add"}
                     </button>
-                    {nbTab === "vocab" && (
-                        <button className="btn btn-gh" onClick={generateDailyVocab} disabled={genVocab}>
-                            {genVocab ? "..." : "📅 Daily 3"}
-                        </button>
-                    )}
                 </div>
+
+                {nbTab === "vocab" && (
+                    <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", gap: 10, alignItems: "center" }}>
+                        <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 700 }}>🎁 Topic Pack:</span>
+                        <select className="inp" style={{ width: 110, margin: 0, height: 26, fontSize: 11 }} value={selectedTopic} onChange={e => setSelectedTopic(e.target.value)}>
+                            {["Technology", "Environment", "Health", "Education", "Society", "Crime", "Art", "Work"].map(t => <option key={t}>{t}</option>)}
+                        </select>
+                        <button className="btn btn-gh btn-sm" onClick={generateTopicPack} disabled={genVocab}>
+                            {genVocab ? "Generating..." : "Generate 5 Words"}
+                        </button>
+                    </div>
+                )}
             </div>
 
+            {/* List */}
             <div className="g2">
                 {filtered.map((v, i) => (
                     <div key={i} className="vc" style={{ cursor: "default" }}>
                         {v.category === "vocab" && (
                             <>
-                                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>
                                     <div className="vw">{v.word}</div>
-                                    <div className="vph">{v.phonetic}</div>
+                                    {v.topic_tag && <span className="cat-badge" style={{ background: "rgba(255,255,255,0.1)", color: "var(--t2)", fontSize: 9 }}>{v.topic_tag}</span>}
                                 </div>
-                                <div className="vt">{v.type}</div>
+                                <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11, color: "var(--t2)", marginBottom: 6 }}>
+                                    <div className="vph" style={{ margin: 0 }}>{v.phonetic}</div>
+                                    <div className="vt" style={{ margin: 0 }}>{v.type}</div>
+                                </div>
                                 <div className="vd">{v.def}</div>
                                 <div className="ve">"{v.example}"</div>
                             </>
@@ -138,9 +205,10 @@ export default function Notebook({ notebook, setNotebook, addToNotebook, fetchNo
                     </div>
                 ))}
             </div>
+
             {filtered.length === 0 && (
                 <div style={{ textAlign: "center", padding: 40, color: "var(--t2)", fontSize: 12 }}>
-                    No items yet. Try adding one above!
+                    No items found for this filter.
                 </div>
             )}
         </div>

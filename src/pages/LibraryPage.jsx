@@ -155,7 +155,7 @@ Answer based ONLY on the document provided. Keep it concise.`;
                         <div style={{ fontSize: 40, marginBottom: 10 }}>📂</div>
                         <div style={{ fontWeight: 700, marginBottom: 4 }}>Drag & Drop PDFs here</div>
                         <div style={{ fontSize: 12, color: "var(--t2)", marginBottom: 16 }}>or click to browse</div>
-                        <input type="file" accept=".pdf" multiple onChange={handleUpload} style={{ position: "absolute", opacity: 0, inset: 0, cursor: "pointer" }} />
+                        <input type="file" accept=".pdf" multiple onChange={handleUpload} style={{ position: "absolute", opacity: 0, inset: 0, cursor: extracting ? "not-allowed" : "pointer", pointerEvents: extracting ? "none" : "auto" }} disabled={extracting} />
                         {extracting && <Loader text="Reading scrolls..." />}
                     </div>
 

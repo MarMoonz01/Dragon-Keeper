@@ -34,6 +34,7 @@ export function IELTSProvider({ children }) {
         if (data && data.length > 0) {
             setRealScores(data);
             setScores(data[0]);
+            localStorage.setItem("nx-ielts-scores", JSON.stringify(data));
         }
     };
 

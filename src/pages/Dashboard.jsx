@@ -9,6 +9,8 @@ import MiniCal from '../components/MiniCal';
 import BriefingCard from '../components/BriefingCard';
 import EmptyState from '../components/EmptyState';
 import TaskItem from '../components/TaskItem';
+import XPShopModal from '../components/XPShopModal';
+import ChallengesCard from '../components/ChallengesCard';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { WL } from '../data/constants';
@@ -18,7 +20,13 @@ import { useSettings } from '../context/SettingsContext';
 import { useNavigate } from 'react-router-dom';
 
 export default function Dashboard() {
-    const { updateStats, dragon, stats } = useGame();
+    const { updateStats, dragon, stats, currentStage, nextStage, dragonSkill } = useGame();
+    // ...
+    // around line 317 in DragonPanel component
+    // I need to scan where DragonPanel is used.
+    // Line 317: <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks} />
+    // I need to change this logic too.
+    // But first, let's update destructuring.
     const streak = stats.streak || 0;
     const { tasks, completeTask: onComplete, addTask: onAdd, editTask: onEdit, deleteTask: onDelete, gcalPushing: pushing, onGcalPush: onPush, showToast } = useTasks();
     const { gcal, updateGcal } = useSettings();
@@ -28,7 +36,9 @@ export default function Dashboard() {
     const onFocus = (t) => navigate('/focus', { state: { task: t } });
     const onConnect = () => updateGcal({ ...gcal, connected: true });
     const [genLoading, setGenLoading] = useState(false);
+    const [showShop, setShowShop] = useState(false);
     const [aiSched, setAiSched] = useState("");
+    const [parsedSchedTasks, setParsedSchedTasks] = useState([]);
     const [showAdd, setShowAdd] = useState(false);
     const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [editingId, setEditingId] = useState(null);
@@ -82,13 +92,64 @@ export default function Dashboard() {
         if (data) setCalHighlights(data.map(d => new Date(d.date + 'T00:00:00').getDate()));
     }, []);
 
+    // Parse AI schedule text into structured tasks
+    const parseScheduleText = (text) => {
+        const lines = text.split('\n').filter(l => l.trim());
+        const parsed = [];
+        for (const line of lines) {
+            // Match: • HH:MM — Task [cat] +XXxp  (flexible with variations)
+            const m = line.match(/•?\s*(\d{1,2}:\d{2})\s*[—–-]\s*(.+?)\s*\[(\w+)\]\s*\+(\d+)\s*xp/i);
+            if (m) {
+                const cat = m[3].toLowerCase();
+                parsed.push({
+                    id: Date.now() + parsed.length,
+                    time: m[1].padStart(5, '0'),
+                    name: m[2].trim(),
+                    cat: ['health', 'work', 'ielts', 'mind', 'social'].includes(cat) ? cat : 'work',
+                    xp: Math.max(10, Math.min(60, parseInt(m[4]) || 20)),
+                    done: false,
+                    calSync: true,
+                    hp: Math.max(8, Math.min(50, parseInt(m[4]) || 15)),
+                });
+            }
+        }
+        return parsed;
+    };
+
     const genSchedule = async () => {
         setGenLoading(true);
+        setParsedSchedTasks([]);
         const dn = tasks.filter(t => t.done).map(t => t.name).join(", ") || "none";
         const pn = tasks.filter(t => !t.done).map(t => t.name).join(", ");
-        const r = await ai([{ role: "user", content: "Generate tomorrow's optimised schedule.\nCompleted today: " + dn + "\nPending: " + pn + "\nRate: " + pct + "%, Dragon Lv." + dragon.level + ".\nCreate 9 tasks with times (HH:MM), categories (health/work/ielts/mind), XP (10-60). Front-load IELTS before noon. Format: • HH:MM — Task [cat] +XXxp" }],
-            "You are NEXUS AI Life Secretary. Generate practical, motivating schedules.");
-        setAiSched(r); setGenLoading(false);
+
+        // Anti-pattern: reusing helper from context folder but file is in utils. 
+        // Dynamic import to avoid circular dependencies if any, though here it's fine.
+        let patternCtx = "";
+        if (supabase) {
+            try {
+                const { getWeeklyPatterns } = await import('../utils/patternAnalysis');
+                patternCtx = await getWeeklyPatterns(supabase);
+            } catch (e) { console.error("Pattern analysis failed", e); }
+        }
+
+        const r = await ai([{ role: "user", content: "Generate tomorrow's optimised schedule.\nCompleted today: " + dn + "\nPending: " + pn + "\nRate: " + pct + "%, Dragon Lv." + dragon.level + ".\n" + (patternCtx ? "Patterns: " + patternCtx + "\n" : "") + "Create 9 tasks with times (HH:MM), categories (health/work/ielts/mind), XP (10-60). Front-load IELTS before noon. Format: • HH:MM — Task [cat] +XXxp" }],
+            "You are NEXUS AI Life Secretary. Generate practical, motivating schedules. Use EXACTLY the format: • HH:MM — Task Name [category] +XXxp");
+        setAiSched(r);
+        const parsed = parseScheduleText(r);
+        setParsedSchedTasks(parsed);
+        setGenLoading(false);
+    };
+
+    const removeSchedTask = (idx) => {
+        setParsedSchedTasks(prev => prev.filter((_, i) => i !== idx));
+    };
+
+    const importAllTasks = () => {
+        if (parsedSchedTasks.length === 0) return;
+        parsedSchedTasks.forEach(t => onAdd(t));
+        showToast("🚀", "Tasks Imported!", parsedSchedTasks.length + " tasks added to your schedule");
+        setParsedSchedTasks([]);
+        setAiSched("");
     };
 
     const startEdit = (t) => {
@@ -128,6 +189,7 @@ export default function Dashboard() {
 
     return (
         <div>
+            {showShop && <XPShopModal onClose={() => setShowShop(false)} />}
             {showAdd && <AddTaskModal onAdd={t => { onAdd(t); setShowAdd(false); }} onClose={() => setShowAdd(false)} />}
             <div className="ph">
                 <div className="ph-title">Command Center</div>
@@ -137,7 +199,7 @@ export default function Dashboard() {
             <div className="g4" style={{ marginBottom: 18 }}>
                 {[
                     { ic: "⚡", v: pct + "%", l: "Daily Progress", ch: "+15% vs yesterday", pos: true, c: "var(--teal)" },
-                    { ic: "🏅", v: dragon.xp, l: "Total XP", ch: "+" + tasks.filter(t => t.done).reduce((a, t) => a + t.xp, 0) + " today", pos: true, c: "var(--gold)" },
+                    { ic: "🏅", v: dragon.xp, l: "Total XP", ch: "+" + tasks.filter(t => t.done).reduce((a, t) => a + t.xp, 0) + " today", pos: true, c: "var(--gold)", action: { label: "🛒 SHOP", onClick: () => setShowShop(true) } },
                     { ic: "📚", v: tasks.filter(t => t.cat === "ielts" && t.done).length + "/3", l: "IELTS Done", ch: "On track", pos: true, c: "var(--violet)" },
                     { ic: "❤️", v: stats.healthScore || 0, l: "Health Score", ch: "Streak: " + streak + "d 🔥" + (stats.streakFreezes ? " 🧊×" + stats.streakFreezes : ""), pos: true, c: "var(--rose)", freezes: stats.streakFreezes || 0 },
                 ].map((s, i) => (
@@ -160,12 +222,18 @@ export default function Dashboard() {
                                     title="Use streak freeze to preserve your streak"
                                 >USE</button>
                             )}
+                            {s.action && (
+                                <button onClick={s.action.onClick} style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.3)", borderRadius: 6, cursor: "pointer", padding: "2px 6px", fontSize: 9, color: "var(--gold)", fontWeight: 700, marginLeft: 6 }}>
+                                    {s.action.label}
+                                </button>
+                            )}
                         </div>
                     </div>
                 ))}
             </div>
             <div className="gm">
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                    <ChallengesCard />
                     <div className="card">
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
                             <div className="ct" style={{ margin: 0 }}>Today's Schedule</div>
@@ -231,6 +299,27 @@ export default function Dashboard() {
                         </button>
                         {genLoading && <div style={{ marginTop: 10 }}><Loader text="AI is building your personalised plan..." /></div>}
                         {aiSched && <div className="aibx" style={{ marginTop: 12 }}>{aiSched}</div>}
+                        {parsedSchedTasks.length > 0 && (
+                            <div className="import-preview" style={{ marginTop: 14 }}>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700, color: "var(--t1)" }}>📋 {parsedSchedTasks.length} tasks parsed</div>
+                                    <button className="btn btn-g btn-sm" onClick={importAllTasks} style={{ padding: "6px 14px" }}>
+                                        🚀 Import All as Tasks
+                                    </button>
+                                </div>
+                                <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                                    {parsedSchedTasks.map((t, i) => (
+                                        <div key={i} style={{ display: "flex", alignItems: "center", gap: 8, padding: "6px 10px", background: "var(--card)", borderRadius: 8, fontSize: 11 }}>
+                                            <span style={{ fontFamily: "'JetBrains Mono',monospace", color: "var(--teal)", fontWeight: 700, minWidth: 40 }}>{t.time}</span>
+                                            <span style={{ flex: 1, color: "var(--t1)" }}>{t.name}</span>
+                                            <span className="cat-badge" style={{ background: `${CC[t.cat]}22`, color: CC[t.cat], padding: "2px 6px", borderRadius: 4, fontSize: 9, fontWeight: 700, textTransform: "uppercase" }}>{t.cat}</span>
+                                            <span style={{ color: "var(--gold)", fontWeight: 700, fontSize: 10 }}>+{t.xp}xp</span>
+                                            <button onClick={() => removeSchedTask(i)} style={{ background: "none", border: "none", cursor: "pointer", color: "var(--t3)", fontSize: 12, padding: "0 2px" }} title="Remove">✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         {!aiSched && !genLoading && (
                             <div className="ins" style={{ marginTop: 10 }}>
                                 <span className="ins-ic">💡</span>
@@ -241,7 +330,10 @@ export default function Dashboard() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                     <JourneyPanel />
-                    <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks} />
+                    <DragonPanel
+                        xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks}
+                        stage={currentStage} nextStage={nextStage} skill={dragonSkill}
+                    />
                     <GCalPanel tasks={tasks} />
                     <div className="card"><div className="ct">Calendar</div><MiniCal hi={calHighlights.length > 0 ? calHighlights : []} /></div>
                 </div>

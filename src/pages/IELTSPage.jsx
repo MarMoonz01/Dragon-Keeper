@@ -8,6 +8,8 @@ import EssayWriter from '../components/ielts/EssayWriter';
 import SpeakingDojo from '../components/ielts/SpeakingDojo';
 import Notebook from '../components/ielts/Notebook';
 import FlashcardDeck from '../components/ielts/FlashcardDeck';
+import ReadingLab from '../components/ielts/ReadingLab';
+import ListeningLab from '../components/ielts/ListeningLab';
 
 export default function IELTSPage() {
     const {
@@ -98,12 +100,14 @@ export default function IELTSPage() {
             </div>
             {/* Tabs */}
             <div className="tabs">
-                {["tracker", "writing", "speaking", "notebook", "flashcards"].map(t => (
+                {["tracker", "reading", "listening", "writing", "speaking", "notebook", "flashcards"].map(t => (
                     <button key={t} className={"tab" + (tab === t ? " on" : "")} onClick={() => setTab(t)} style={{ textTransform: "capitalize" }}>{t}</button>
                 ))}
             </div>
 
             {tab === "tracker" && <ScoreTracker latestScore={latestScore} realScores={realScores} practiceLogs={practiceLogs} togglePracticeLog={togglePracticeLog} ieltsTarget={ieltsTarget} supabase={supabase} />}
+            {tab === "reading" && <ReadingLab />}
+            {tab === "listening" && <ListeningLab />}
             {tab === "writing" && <EssayWriter />}
             {tab === "speaking" && <SpeakingDojo setErrorMsg={setErrorMsg} />}
             {tab === "notebook" && <Notebook notebook={notebook} setNotebook={setNotebook} addToNotebook={addToNotebook} fetchNotebook={fetchNotebook} supabase={supabase} />}

@@ -93,7 +93,7 @@ export default function WorldMapPage() {
                 return updated;
             });
         }
-    }, [nodes]);
+    }, [nodes, quests]);
 
     const activeNode = useMemo(() =>
         nodes.find(n => quests[n.id]?.status === "active"),

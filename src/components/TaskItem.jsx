@@ -2,8 +2,34 @@ import React from 'react';
 import { useGame } from '../context/GameContext';
 
 const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, cancelEdit, startEdit, onComplete, onFocus, onDelete, isNow }) => {
+    const [showXp, setShowXp] = React.useState(false);
+
+    const handleComplete = (e) => {
+        e.stopPropagation();
+        if (!t.done) {
+            setShowXp(true);
+            setTimeout(() => setShowXp(false), 1000); // Match animation duration
+        }
+        onComplete(t.id, t.xp);
+    };
+
     return (
-        <div key={t.id}>
+        <div key={t.id} style={{ position: "relative" }}>
+            {showXp && (
+                <span className="xp-float" style={{
+                    position: "absolute",
+                    top: 0,
+                    right: 40,
+                    color: "var(--gold)",
+                    fontWeight: "bold",
+                    fontSize: "14px",
+                    zIndex: 10,
+                    pointerEvents: "none",
+                    animation: "floatUp 1s ease-out forwards"
+                }}>
+                    +{t.xp} XP
+                </span>
+            )}
             {editingId === t.id ? (
                 <div className="task" style={{ flexDirection: "column", gap: 8, cursor: "default" }}>
                     <div style={{ display: "flex", gap: 8, width: "100%" }}>
@@ -26,7 +52,7 @@ const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, ca
                 <div className={"task" + (t.done ? " done" : "")} style={{ position: "relative", alignItems: "center" }}>
                     {/* Task Check/Complete */}
                     <div className={"task-check" + (t.done ? " y" : "")}
-                        onClick={() => onComplete(t.id, t.xp)}
+                        onClick={handleComplete}
                         style={{
                             width: 20, height: 20, borderRadius: 6, border: "2px solid var(--bdr)",
                             marginRight: 12, display: "flex", alignItems: "center", justifyContent: "center",

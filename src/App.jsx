@@ -10,6 +10,8 @@ import Sidebar from './components/Sidebar';
 import SettingsModal from './components/SettingsModal';
 import Dashboard from './pages/Dashboard';
 import DailyCheckInModal from './components/DailyCheckInModal';
+import WeeklyReviewModal from './components/WeeklyReviewModal';
+import AIChatBubble from './components/AIChatBubble';
 import ErrorBoundary from './components/ErrorBoundary';
 import OnboardingPage from './components/OnboardingModal';
 import NotificationManager from './components/NotificationManager';
@@ -33,6 +35,7 @@ function AppContent() {
   const activePage = location.pathname.substring(1) || 'dashboard';
   const { showOnboarding, setShowOnboarding } = useSettings();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [showWeeklyReview, setShowWeeklyReview] = useState(false);
 
   // Close sidebar on route change
   React.useEffect(() => {
@@ -48,7 +51,7 @@ function AppContent() {
       <div className="app">
         <div className={`sb-overlay${isSidebarOpen ? " open" : ""}`} onClick={() => setIsSidebarOpen(false)} />
         <button className="hamburger" onClick={() => setIsSidebarOpen(true)} aria-label="Open navigation menu">☰</button>
-        <Sidebar isOpen={isSidebarOpen} />
+        <Sidebar isOpen={isSidebarOpen} onShowWeeklyReview={() => { setShowWeeklyReview(true); setIsSidebarOpen(false); }} />
 
         <main className="main">
           <div className="page-enter" key={location.pathname}>
@@ -87,6 +90,8 @@ function AppContent() {
 
       <SettingsModal />
       <DailyCheckInModal />
+      <WeeklyReviewModal onClose={() => setShowWeeklyReview(false)} forceShow={showWeeklyReview} />
+      <AIChatBubble />
       <NotificationManager />
       <Toast />
       <LevelUpModal />
