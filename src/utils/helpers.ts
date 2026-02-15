@@ -41,8 +41,8 @@ const API_KEYS = {
 
 const MODELS = {
     claude: "claude-3-5-sonnet-20240620", // Updated to latest stable Sonnet
-    openai: "gpt-4o",
-    gemini: "gemini-1.5-flash",
+    openai: "gpt-5.2",
+    gemini: "gemini-3.0-flash",
 };
 
 export async function ai(messages: Message[], system: string = "", provider: string | null = null): Promise<string> {

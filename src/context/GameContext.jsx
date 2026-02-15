@@ -165,15 +165,16 @@ export function GameProvider({ children }) {
     };
 
     const updateChallengeProgress = (type, amount = 1) => {
-        let rewardsToAdd = 0;
         setChallenges(prev => {
+            let rewardsToAdd = 0;
             let changed = false;
+
             const updateList = (list) => list.map(c => {
                 if (c.completed) return c;
                 if (c.type === type || c.type === 'any') {
                     const newCurrent = c.current + amount;
                     if (newCurrent >= c.target) {
-                        rewardsToAdd += c.reward; // Collect reward (Fix Bug 2)
+                        rewardsToAdd += c.reward;
                         changed = true;
                         return { ...c, current: newCurrent, completed: true };
                     }
@@ -187,15 +188,17 @@ export function GameProvider({ children }) {
             const newWeekly = updateList(prev.weekly);
 
             if (changed) {
+                // Execute side effect (addXP) outside of the pure state transition
+                if (rewardsToAdd > 0) {
+                    setTimeout(() => addXP(rewardsToAdd), 0);
+                }
+
                 const newState = { ...prev, daily: newDaily, weekly: newWeekly };
                 save("nx-challenges", newState);
                 return newState;
             }
             return prev;
         });
-
-        // Apply rewards AFTER state update to avoid conflicts
-        if (rewardsToAdd > 0) addXP(rewardsToAdd);
     };
 
     const checkAchievements = (tasks) => {
