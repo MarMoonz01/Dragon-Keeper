@@ -4,7 +4,7 @@ import { DRAGONS } from '../data/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useGame } from '../context/GameContext';
 
-export default function Sidebar({ isOpen }) {
+export default function Sidebar({ isOpen, onShowWeeklyReview }) {
     const navigate = useNavigate();
     const location = useLocation();
     const { theme, toggleTheme, setShowSettings } = useSettings();
@@ -53,6 +53,9 @@ export default function Sidebar({ isOpen }) {
                     <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={toggleTheme} title={theme === "light" ? "Switch to Dark Mode" : "Switch to Light Mode"}>
                         {theme === "light" ? "🌙" : "☀️"}
                     </button>
+                    {onShowWeeklyReview && (
+                        <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={onShowWeeklyReview} title="Weekly Review">📅</button>
+                    )}
                     <button className="btn btn-gh btn-sm" style={{ padding: "6px" }} onClick={() => setShowSettings(true)}>⚙️</button>
                 </div>
             </div>

@@ -23,7 +23,7 @@ export default function ListeningLab() {
     // Cleanup on unmount
     useEffect(() => {
         return () => {
-            if (synth.speaking) synth.cancel();
+            if (window.speechSynthesis.speaking) window.speechSynthesis.cancel();
         };
     }, []);
 

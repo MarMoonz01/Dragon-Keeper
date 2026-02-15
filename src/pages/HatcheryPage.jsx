@@ -10,10 +10,11 @@ export default function HatcheryPage() {
     const { dragon, stats, defeatMonster: onDefeat } = useGame();
     const streak = stats.streak || 0;
     const { tasks } = useTasks();
+    const doneTasks = tasks.filter(t => t.done);
     const unlocked = ACHIEVEMENTS.map(a => ({
         ...a,
-        cur: Math.min(a.max, a.prog(null, tasks, { ...stats, dragonLevel: dragon.level, streak })),
-        done: a.prog(null, tasks, { ...stats, dragonLevel: dragon.level, streak }) >= a.max
+        cur: Math.min(a.max, a.prog(tasks, doneTasks, { ...stats, dragonLevel: dragon.level, streak })),
+        done: a.prog(tasks, doneTasks, { ...stats, dragonLevel: dragon.level, streak }) >= a.max
     }));
     return (
         <div>

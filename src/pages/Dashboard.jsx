@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react'; // Verified Fix: Import CC
 import AddTaskModal from '../components/AddTaskModal';
 import Ring from '../components/Ring';
 import Loader from '../components/Loader';
@@ -13,20 +13,12 @@ import XPShopModal from '../components/XPShopModal';
 import ChallengesCard from '../components/ChallengesCard';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
-import { WL } from '../data/constants';
-import { useGame } from '../context/GameContext';
-import { useTasks } from '../context/TaskContext';
-import { useSettings } from '../context/SettingsContext';
-import { useNavigate } from 'react-router-dom';
+import { WL, CC } from '../data/constants';  // Fix 13: Import CC
+
+// ... imports
 
 export default function Dashboard() {
     const { updateStats, dragon, stats, currentStage, nextStage, dragonSkill } = useGame();
-    // ...
-    // around line 317 in DragonPanel component
-    // I need to scan where DragonPanel is used.
-    // Line 317: <DragonPanel xp={dragon.xp} lv={dragon.level} done={done} streak={streak} tasks={tasks} />
-    // I need to change this logic too.
-    // But first, let's update destructuring.
     const streak = stats.streak || 0;
     const { tasks, completeTask: onComplete, addTask: onAdd, editTask: onEdit, deleteTask: onDelete, gcalPushing: pushing, onGcalPush: onPush, showToast } = useTasks();
     const { gcal, updateGcal } = useSettings();
@@ -35,6 +27,8 @@ export default function Dashboard() {
     // Derived props
     const onFocus = (t) => navigate('/focus', { state: { task: t } });
     const onConnect = () => updateGcal({ ...gcal, connected: true });
+
+    // ... states
     const [genLoading, setGenLoading] = useState(false);
     const [showShop, setShowShop] = useState(false);
     const [aiSched, setAiSched] = useState("");
@@ -43,25 +37,18 @@ export default function Dashboard() {
     const [weeklyData, setWeeklyData] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [editingId, setEditingId] = useState(null);
     const [editForm, setEditForm] = useState({});
-    const [sortBy, setSortBy] = useState("time"); // time | category | xp
+    const [sortBy, setSortBy] = useState("time");
     const [filterInc, setFilterInc] = useState(false);
     const [calHighlights, setCalHighlights] = useState([]);
 
     const done = tasks.filter(t => t.done).length;
     const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
 
-    useEffect(() => {
-        if (supabase) {
-            fetchWeeklyHistory();
-            fetchCalHighlights();
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [dragon.level, streak, fetchWeeklyHistory, fetchCalHighlights]);
-
+    // Fix 2: Define callbacks BEFORE useEffect to avoid stale references
     const fetchWeeklyHistory = React.useCallback(async () => {
         const today = new Date();
         const monday = new Date(today);
-        monday.setDate(today.getDate() - ((today.getDay() + 6) % 7)); // Get this week's Monday
+        monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
         const monStr = monday.toISOString().split('T')[0];
 
         const { data } = await supabase.from('daily_summaries')
@@ -73,14 +60,13 @@ export default function Dashboard() {
         if (data) {
             const mapped = [0, 0, 0, 0, 0, 0, 0];
             data.forEach(d => {
-                const dayIdx = (new Date(d.date + 'T00:00:00').getDay() + 6) % 7; // Mon=0
+                const dayIdx = (new Date(d.date + 'T00:00:00').getDay() + 6) % 7;
                 mapped[dayIdx] = d.productivity_score || 0;
             });
             setWeeklyData(mapped);
         }
     }, []);
 
-    // Issue #9: fetch real dates for MiniCal highlights
     const fetchCalHighlights = React.useCallback(async () => {
         const now = new Date();
         const y = now.getFullYear(), m = now.getMonth();
@@ -91,6 +77,13 @@ export default function Dashboard() {
             .gte('date', start).lte('date', end);
         if (data) setCalHighlights(data.map(d => new Date(d.date + 'T00:00:00').getDate()));
     }, []);
+
+    useEffect(() => {
+        if (supabase) {
+            fetchWeeklyHistory();
+            fetchCalHighlights();
+        }
+    }, [fetchWeeklyHistory, fetchCalHighlights]); // Clean dependencies
 
     // Parse AI schedule text into structured tasks
     const parseScheduleText = (text) => {

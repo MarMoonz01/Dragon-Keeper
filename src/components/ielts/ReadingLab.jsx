@@ -75,7 +75,9 @@ Return JSON ONLY:
         }
     };
 
-    const handleSubmit = () => {
+    const handleSubmit = React.useCallback(() => {
+        if (!passage) return;
+
         let score = 0;
         let total = questions.length; // Should be 9
         const detailedResults = [];
@@ -103,7 +105,7 @@ Return JSON ONLY:
         // Awards
         addXP(score * 15);
         // Save to IELTS logs could go here
-    };
+    }, [passage, questions, answers, addXP]);
 
     const calculateBand = (score, total) => {
         const pct = score / total;

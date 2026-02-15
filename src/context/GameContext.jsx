@@ -165,6 +165,7 @@ export function GameProvider({ children }) {
     };
 
     const updateChallengeProgress = (type, amount = 1) => {
+        let rewardsToAdd = 0;
         setChallenges(prev => {
             let changed = false;
             const updateList = (list) => list.map(c => {
@@ -172,7 +173,7 @@ export function GameProvider({ children }) {
                 if (c.type === type || c.type === 'any') {
                     const newCurrent = c.current + amount;
                     if (newCurrent >= c.target) {
-                        addXP(c.reward); // Instant reward
+                        rewardsToAdd += c.reward; // Collect reward (Fix Bug 2)
                         changed = true;
                         return { ...c, current: newCurrent, completed: true };
                     }
@@ -192,6 +193,9 @@ export function GameProvider({ children }) {
             }
             return prev;
         });
+
+        // Apply rewards AFTER state update to avoid conflicts
+        if (rewardsToAdd > 0) addXP(rewardsToAdd);
     };
 
     const checkAchievements = (tasks) => {
@@ -199,7 +203,7 @@ export function GameProvider({ children }) {
         const doneTasks = tasks.filter(t => t.done);
         const dynamicStats = {
             ...stats,
-            totalTasksStr: stats.totalTasks + doneTasks.length, // Approximation or use actual total if tracked
+            totalTasks: (stats.totalTasks || stats.totalTasksStr || 0) + doneTasks.length, // Fix: Use totalTasks
             streak: stats.streak || 0
             // Add other derived stats if needed
         };

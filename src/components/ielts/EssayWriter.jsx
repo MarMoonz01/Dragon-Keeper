@@ -3,7 +3,7 @@ import Loader from '../Loader';
 import { ai, load, save } from '../../utils/helpers';
 import { useGame } from '../../context/GameContext';
 import { useIELTS } from '../../context/IELTSContext';
-import { RadialBarChart, RadialBar, Legend, ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
 
 export default function EssayWriter() {
     const { refreshSkill } = useGame();

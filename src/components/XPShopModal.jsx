@@ -21,8 +21,8 @@ export default function XPShopModal({ onClose }) {
     };
 
     return (
-        <div className="modal-overlay" onClick={onClose}>
-            <div className="modal" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
+        <div className="mo" onClick={onClose}>
+            <div className="mc" onClick={e => e.stopPropagation()} style={{ maxWidth: 450 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
                     <div className="ct" style={{ margin: 0 }}>🛒 XP Shop</div>
                     <button onClick={onClose} style={{ background: "none", border: "none", color: "var(--t2)", fontSize: 18, cursor: "pointer" }}>✕</button>

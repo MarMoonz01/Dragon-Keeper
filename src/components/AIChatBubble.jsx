@@ -83,8 +83,11 @@ AI: "You're Level 12 (Target: 10 ✅), but your Band is 6.0 (Target: 6.5 ❌). Y
 
             if (matches) {
                 matches.forEach(cmdStr => {
-                    const [action, params] = cmdStr.replace(/[\[\]]/g, "").split(":");
-                    const p = params.split("|").map(s => s.trim());
+                    const colonIdx = cmdStr.indexOf(":");
+                    const action = cmdStr.substring(1, colonIdx);
+                    // Remove opening [Action: and closing ]
+                    const paramsStr = cmdStr.substring(colonIdx + 1, cmdStr.length - 1);
+                    const p = paramsStr.split("|").map(s => s.trim());
 
                     if (action === "ADD") {
                         addTask({ id: Date.now() + Math.random(), name: p[0], time: p[1] || "09:00", cat: p[2] || "work", xp: parseInt(p[3]) || 20, done: false, hp: 15 });

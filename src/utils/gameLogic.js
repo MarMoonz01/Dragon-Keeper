@@ -4,7 +4,7 @@ import { MONSTERS } from '../data/constants';
 export const generateRandomMonster = (playerLevel) => {
     // 1. Pick a base monster template
     // We want monsters roughly around the player's level, but with some variance
-    const candidates = MONSTERS.filter(m => Math.abs(m.lv - playerLevel) <= 2) || [];
+    const candidates = MONSTERS.filter(m => Math.abs(m.level - playerLevel) <= 2) || [];
 
     // Fallback if no close match
     const template = candidates.length > 0
@@ -29,7 +29,7 @@ export const generateRandomMonster = (playerLevel) => {
         hp,
         maxHp: hp,
         xp,
-        reward: xp // ✅ OVERWRITE: Ensure reward equals scaled XP
+        reward: xp // Ensure reward equals scaled XP
     };
 };
 

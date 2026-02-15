@@ -119,9 +119,9 @@ export const ACHIEVEMENTS: Achievement[] = [
     { id: "streak_p", em: "💎", name: "Centurion", desc: "100-day streak", max: 100, tier: "platinum", prog: (_, _2, s) => s.streak || 0 },
 
     // Tasks (Total)
-    { id: "tasks_b", em: "📝", name: "Getting Started", desc: "Complete 10 tasks", max: 10, tier: "bronze", prog: (_, _2, s) => s.totalTasksStr || 0 },
-    { id: "tasks_s", em: "📝", name: "Productivity Machine", desc: "Complete 100 tasks", max: 100, tier: "silver", prog: (_, _2, s) => s.totalTasksStr || 0 },
-    { id: "tasks_g", em: "📝", name: "Task Titan", desc: "Complete 1000 tasks", max: 1000, tier: "gold", prog: (_, _2, s) => s.totalTasksStr || 0 },
+    { id: "tasks_b", em: "📝", name: "Getting Started", desc: "Complete 10 tasks", max: 10, tier: "bronze", prog: (_, _2, s) => s.totalTasks || 0 },
+    { id: "tasks_s", em: "📝", name: "Productivity Machine", desc: "Complete 100 tasks", max: 100, tier: "silver", prog: (_, _2, s) => s.totalTasks || 0 },
+    { id: "tasks_g", em: "📝", name: "Task Titan", desc: "Complete 1000 tasks", max: 1000, tier: "gold", prog: (_, _2, s) => s.totalTasks || 0 },
 
     // IELTS
     { id: "ielts_b", em: "📚", name: "Student", desc: "10 IELTS tasks done", max: 10, tier: "bronze", prog: (_, _2, s) => s.ieltsTasks || 0 },

@@ -10,6 +10,9 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
     const [goals, setGoals] = useState(["", "", ""]);
     const [step, setStep] = useState(1); // 1: Stats, 2: AI Insight, 3: Goals
 
+    const onCloseRef = React.useRef(onClose);
+    useEffect(() => { onCloseRef.current = onClose; }, [onClose]);
+
     useEffect(() => {
         const checkAndLoad = async () => {
             const today = new Date();
@@ -19,7 +22,7 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
 
             if (!forceShow) {
                 if (!isSunday || lastReview === todayStr) {
-                    onClose();
+                    onCloseRef.current();
                     return;
                 }
             }
@@ -43,7 +46,7 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
             }
         };
         checkAndLoad();
-    }, [forceShow, onClose]);
+    }, [forceShow]);
 
     const processReview = async (data) => {
         const totalScore = data.reduce((a, b) => a + (b.productivity_score || 0), 0);
