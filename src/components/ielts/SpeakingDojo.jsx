@@ -1,318 +1,13 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import Loader from '../Loader';
 import { ai } from '../../utils/helpers';
 import { TOPICS } from '../../data/constants';
-
-// ─── Shared Model Selector ────────────────────────────────────────────────────
-// Reads/writes from localStorage("nx-ai-model") so ALL pages share the same choice
-export const AI_MODELS = [
-    { id: "claude", label: "Claude", sub: "Sonnet", color: "#e8a25a", em: "🟠" },
-    { id: "openai", label: "GPT-5.2", sub: "OpenAI", color: "#74c69d", em: "🟢" },
-    { id: "gemini", label: "Gemini", sub: "3.0 Flash", color: "#74b4f7", em: "🔵" },
-];
-
-export function useAIModel() {
-    const [model, setModelState] = useState(() => {
-        try { return localStorage.getItem("nx-ai-model") || "claude"; }
-        catch { return "claude"; }
-    });
-    const setModel = useCallback((m) => {
-        setModelState(m);
-        try { localStorage.setItem("nx-ai-model", m); } catch { }
-        // Dispatch event so other components can react
-        window.dispatchEvent(new CustomEvent("nx-model-change", { detail: m }));
-    }, []);
-    useEffect(() => {
-        const handler = (e) => setModelState(e.detail);
-        window.addEventListener("nx-model-change", handler);
-        return () => window.removeEventListener("nx-model-change", handler);
-    }, []);
-    return [model, setModel];
-}
-
-export function ModelSelector({ compact = false }) {
-    const [model, setModel] = useAIModel();
-    const [open, setOpen] = useState(false);
-    const current = AI_MODELS.find(m => m.id === model) || AI_MODELS[0];
-    const ref = useRef(null);
-
-    useEffect(() => {
-        const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
-        document.addEventListener("mousedown", close);
-        return () => document.removeEventListener("mousedown", close);
-    }, []);
-
-    return (
-        <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
-            <button onClick={() => setOpen(o => !o)} style={{
-                display: "flex", alignItems: "center", gap: 6,
-                padding: compact ? "4px 10px" : "6px 14px",
-                borderRadius: 20, cursor: "pointer",
-                background: `${current.color}18`, border: `1px solid ${current.color}40`,
-                color: current.color, fontWeight: 700,
-                fontSize: compact ? 11 : 12,
-                fontFamily: "'Syne', sans-serif",
-            }}>
-                {current.em} {current.label}
-                {!compact && <span style={{ fontSize: 9, color: `${current.color}aa`, marginLeft: 2 }}>▾</span>}
-            </button>
-            {open && (
-                <div style={{
-                    position: "absolute", top: "calc(100% + 6px)", right: 0,
-                    background: "var(--card)", border: "1px solid var(--bdr)",
-                    borderRadius: 12, overflow: "hidden", zIndex: 200,
-                    boxShadow: "0 8px 32px rgba(0,0,0,.5)", minWidth: 160,
-                }}>
-                    <div style={{
-                        padding: "8px 14px 6px", fontSize: 9, color: "var(--t3)",
-                        fontWeight: 700, textTransform: "uppercase", letterSpacing: 1
-                    }}>
-                        AI Model
-                    </div>
-                    {AI_MODELS.map(m => (
-                        <button key={m.id} onClick={() => { setModel(m.id); setOpen(false); }} style={{
-                            width: "100%", display: "flex", alignItems: "center", gap: 10,
-                            padding: "9px 14px", background: model === m.id ? `${m.color}14` : "transparent",
-                            border: "none", cursor: "pointer",
-                            borderLeft: model === m.id ? `3px solid ${m.color}` : "3px solid transparent",
-                            transition: "all 0.15s",
-                        }}>
-                            <span style={{ fontSize: 14 }}>{m.em}</span>
-                            <div style={{ flex: 1, textAlign: "left" }}>
-                                <div style={{
-                                    fontSize: 12, fontWeight: 700,
-                                    color: model === m.id ? m.color : "var(--t1)",
-                                    fontFamily: "'Syne', sans-serif"
-                                }}>
-                                    {m.label}
-                                </div>
-                                <div style={{ fontSize: 9, color: "var(--t3)" }}>{m.sub}</div>
-                            </div>
-                            {model === m.id && <span style={{ fontSize: 10, color: m.color }}>✓</span>}
-                        </button>
-                    ))}
-                </div>
-            )}
-        </div>
-    );
-}
-
-// ─── Waveform Visualiser ──────────────────────────────────────────────────────
-function Waveform({ isRecording, analyserRef }) {
-    const canvasRef = useRef(null);
-    const rafRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        const W = canvas.width, H = canvas.height;
-
-        if (!isRecording || !analyserRef.current) {
-            ctx.clearRect(0, 0, W, H);
-            ctx.strokeStyle = "rgba(45,212,191,0.3)";
-            ctx.lineWidth = 2;
-            ctx.beginPath(); ctx.moveTo(0, H / 2); ctx.lineTo(W, H / 2); ctx.stroke();
-            return;
-        }
-
-        const analyser = analyserRef.current;
-        const bufLen = analyser.frequencyBinCount;
-        const dataArr = new Uint8Array(bufLen);
-
-        const draw = () => {
-            rafRef.current = requestAnimationFrame(draw);
-            analyser.getByteTimeDomainData(dataArr);
-            ctx.clearRect(0, 0, W, H);
-            const grad = ctx.createLinearGradient(0, 0, W, 0);
-            grad.addColorStop(0, "#a78bfa");
-            grad.addColorStop(0.5, "#2dd4bf");
-            grad.addColorStop(1, "#fccb58");
-            ctx.strokeStyle = grad;
-            ctx.lineWidth = 2.5;
-            ctx.lineJoin = "round";
-            ctx.beginPath();
-            const sliceW = W / bufLen;
-            let x = 0;
-            for (let i = 0; i < bufLen; i++) {
-                const v = dataArr[i] / 128.0;
-                const y = (v * H) / 2;
-                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
-                x += sliceW;
-            }
-            ctx.lineTo(W, H / 2);
-            ctx.stroke();
-        };
-        draw();
-        return () => cancelAnimationFrame(rafRef.current);
-    }, [isRecording]);
-
-    return (
-        <canvas ref={canvasRef} width={340} height={56} style={{
-            width: "100%", height: 56, borderRadius: 10,
-            background: "rgba(0,0,0,0.25)", display: "block"
-        }} />
-    );
-}
-
-// ─── Score Ring ───────────────────────────────────────────────────────────────
-function ScoreRing({ label, score, color }) {
-    const r = 28, c = 2 * Math.PI * r;
-    const pct = (score / 9) * 100;
-    return (
-        <div style={{ textAlign: "center" }}>
-            <div style={{ position: "relative", width: 72, height: 72, margin: "0 auto" }}>
-                <svg width={72} height={72}>
-                    <circle cx={36} cy={36} r={r} fill="none"
-                        stroke="rgba(255,255,255,0.06)" strokeWidth={5} />
-                    <circle cx={36} cy={36} r={r} fill="none"
-                        stroke={color} strokeWidth={5}
-                        strokeDasharray={c}
-                        strokeDashoffset={c - (pct / 100) * c}
-                        strokeLinecap="round"
-                        style={{
-                            transform: "rotate(-90deg)", transformOrigin: "50% 50%",
-                            transition: "stroke-dashoffset 1s cubic-bezier(.34,1.56,.64,1)"
-                        }} />
-                </svg>
-                <div style={{
-                    position: "absolute", inset: 0, display: "flex",
-                    alignItems: "center", justifyContent: "center",
-                    fontFamily: "'JetBrains Mono',monospace", fontWeight: 700,
-                    fontSize: 16, color
-                }}>
-                    {score.toFixed(1)}
-                </div>
-            </div>
-            <div style={{
-                fontSize: 9, color: "var(--t2)", marginTop: 5,
-                fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.8
-            }}>
-                {label}
-            </div>
-        </div>
-    );
-}
-
-// ─── Pronunciation Word Highlight ─────────────────────────────────────────────
-function PronunciationHighlight({ transcript, issues }) {
-    if (!transcript || !issues?.length) return (
-        <div style={{ fontSize: 12, color: "var(--t2)", lineHeight: 1.9 }}>{transcript}</div>
-    );
-    const words = transcript.split(/\s+/);
-    return (
-        <div style={{ fontSize: 12, lineHeight: 2.1, letterSpacing: 0.2 }}>
-            {words.map((word, i) => {
-                const clean = word.toLowerCase().replace(/[^a-z]/g, "");
-                const issue = issues.find(iss =>
-                    iss.word?.toLowerCase().replace(/[^a-z]/g, "") === clean);
-                return (
-                    <React.Fragment key={i}>
-                        {issue ? (
-                            <span title={`${iss?.ipa || ""} — ${issue.tip}`} style={{
-                                background: "rgba(251,113,133,0.18)",
-                                border: "1px solid rgba(251,113,133,0.35)",
-                                borderRadius: 4, padding: "1px 4px",
-                                color: "var(--rose)", cursor: "help",
-                            }}>
-                                {word}
-                                <span style={{
-                                    fontSize: 8, verticalAlign: "super",
-                                    color: "var(--rose)", marginLeft: 1
-                                }}>⚠</span>
-                            </span>
-                        ) : (
-                            <span style={{ color: "var(--t1)" }}>{word}</span>
-                        )}{" "}
-                    </React.Fragment>
-                );
-            })}
-        </div>
-    );
-}
-
-// ─── Pronunciation Detail Card ────────────────────────────────────────────────
-function PronunciationCard({ issue }) {
-    const [playing, setPlaying] = useState(false);
-
-    const playIPA = () => {
-        if (!window.speechSynthesis) return;
-        setPlaying(true);
-        const utt = new SpeechSynthesisUtterance(issue.word);
-        utt.lang = "en-US";
-        utt.rate = 0.7;
-        utt.onend = () => setPlaying(false);
-        window.speechSynthesis.speak(utt);
-    };
-
-    // severity colour
-    const col = issue.severity === "high" ? "var(--rose)"
-        : issue.severity === "medium" ? "#fb923c"
-            : "var(--gold)";
-
-    return (
-        <div style={{
-            display: "grid", gridTemplateColumns: "1fr auto",
-            alignItems: "center", gap: 8,
-            padding: "10px 14px", background: "var(--card2)",
-            borderRadius: 10, fontSize: 11,
-            borderLeft: `3px solid ${col}`,
-        }}>
-            <div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                    <span style={{
-                        color: col, fontWeight: 800, fontSize: 13,
-                        fontFamily: "'Cinzel Decorative',serif"
-                    }}>
-                        {issue.word}
-                    </span>
-                    <span style={{
-                        fontFamily: "'JetBrains Mono',monospace",
-                        color: "var(--teal)", fontSize: 11, letterSpacing: 1
-                    }}>
-                        {issue.ipa}
-                    </span>
-                    {issue.severity && (
-                        <span style={{
-                            fontSize: 9, padding: "1px 6px", borderRadius: 8,
-                            background: `${col}18`, color: col, fontWeight: 700,
-                            textTransform: "uppercase"
-                        }}>
-                            {issue.severity}
-                        </span>
-                    )}
-                </div>
-                {issue.heard && (
-                    <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3 }}>
-                        Heard: <span style={{ color: "#fb923c", fontFamily: "'JetBrains Mono',monospace" }}>
-                            /{issue.heard}/
-                        </span>
-                        {" → "}
-                        <span style={{ color: "var(--teal)", fontFamily: "'JetBrains Mono',monospace" }}>
-                            {issue.ipa}
-                        </span>
-                    </div>
-                )}
-                <div style={{ color: "var(--t2)", lineHeight: 1.5 }}>{issue.tip}</div>
-                {issue.example && (
-                    <div style={{ fontSize: 10, color: "var(--t3)", marginTop: 3, fontStyle: "italic" }}>
-                        e.g. "{issue.example}"
-                    </div>
-                )}
-            </div>
-            <button onClick={playIPA} title="Listen to correct pronunciation"
-                style={{
-                    width: 32, height: 32, borderRadius: "50%", border: "none",
-                    background: playing ? "var(--teal)" : "rgba(0,221,179,0.12)",
-                    color: playing ? "#000" : "var(--teal)",
-                    cursor: "pointer", fontSize: 14, flexShrink: 0,
-                    transition: "all 0.2s",
-                }}>
-                {playing ? "⏸" : "▶"}
-            </button>
-        </div>
-    );
-}
+import { useAIModel } from '../../hooks/useAIModel';
+import Waveform from './Waveform';
+import ScoreRing from './ScoreRing';
+import PronunciationCard from './PronunciationCard';
+import PronunciationHighlight from './PronunciationHighlight';
+import ModelSelector from './ModelSelector';
 
 // ─── Audio blob → base64 ──────────────────────────────────────────────────────
 async function blobToBase64(blob) {
@@ -691,8 +386,8 @@ export default function SpeakingDojo({ setErrorMsg }) {
                         </div>
                         <div style={{ fontSize: 9, color: "var(--t3)", lineHeight: 1.4 }}>
                             {audioSupport
-                                ? `Real pronunciation analysis via ${model === "claude" ? "Claude" : "GPT-4o"}`
-                                : "Switch to Claude or GPT-4o for audio analysis"}
+                                ? `Real pronunciation analysis via ${model === "claude" ? "Claude" : "GPT-5.2"}`
+                                : "Switch to Claude or GPT-5.2 for audio analysis"}
                         </div>
                     </div>
                 </div>
@@ -875,7 +570,7 @@ export default function SpeakingDojo({ setErrorMsg }) {
                         </div>
                         {audioSupport && (
                             <div style={{ marginTop: 8, fontSize: 10, color: "var(--t3)" }}>
-                                🎙️ Real audio analysis with {model === "claude" ? "Claude" : "GPT-4o"}
+                                🎙️ Real audio analysis with {model === "claude" ? "Claude" : "GPT-5.2"}
                             </div>
                         )}
                     </div>
@@ -894,8 +589,8 @@ export default function SpeakingDojo({ setErrorMsg }) {
                                 fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.5
                             }}>
                                 {feedback.analyzedWithAudio
-                                    ? `🎙️ Audio Analysis · ${AI_MODELS.find(m => m.id === feedback.model)?.label || feedback.model}`
-                                    : `📝 Text Analysis · ${AI_MODELS.find(m => m.id === feedback.model)?.label || feedback.model}`}
+                                    ? `🎙️ Audio Analysis · ${model === "claude" ? "Claude" : "GPT-5.2"}`
+                                    : `📝 Text Analysis · ${model === "claude" ? "Claude" : "GPT-5.2"}`}
                             </span>
                         </div>
 
