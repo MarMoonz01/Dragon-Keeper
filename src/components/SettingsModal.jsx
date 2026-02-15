@@ -12,8 +12,9 @@ export default function SettingsModal() {
 
     useEffect(() => {
         const s = load("nx-settings");
+        const storedModel = localStorage.getItem("nx-ai-model");
         if (s) {
-            setProvider(s.provider || "claude");
+            setProvider(storedModel || s.provider || "claude");
             const k = {
                 claudeKey: s.claudeKey || "",
                 openaiKey: s.openaiKey || "",
@@ -40,6 +41,8 @@ export default function SettingsModal() {
 
     const handleSave = () => {
         save("nx-settings", { provider, ...keys, ...goals });
+        try { localStorage.setItem("nx-ai-model", provider); } catch { } // Sync with SpeakingDojo
+        window.dispatchEvent(new CustomEvent("nx-model-change", { detail: provider })); // Notify listeners
         const supabaseChanged = keys.supabaseUrl !== initialSupabase.url || keys.supabaseKey !== initialSupabase.key;
         if (supabaseChanged) {
             window.location.reload();
@@ -58,10 +61,13 @@ export default function SettingsModal() {
 
                 <div className="fr">
                     <label>AI Provider</label>
+                    <div style={{ fontSize: 10, color: "var(--t2)", marginBottom: 6 }}>
+                        Select which AI model to use for generating content.
+                    </div>
                     <select className="inp" value={provider} onChange={e => setProvider(e.target.value)}>
-                        <option value="claude">Anthropic (Claude Sonnet 4)</option>
+                        <option value="claude">Anthropic (Claude 3.5 Sonnet)</option>
                         <option value="openai">OpenAI (GPT-4o)</option>
-                        <option value="gemini">Google (Gemini 3 Flash Preview)</option>
+                        <option value="gemini">Google (Gemini 1.5 Flash)</option>
                     </select>
                 </div>
 
@@ -74,16 +80,25 @@ export default function SettingsModal() {
                     </div>
 
                     {provider === "claude" && (
-                        <input className="inp" type="password" placeholder="sk-ant-..." value={keys.claudeKey}
-                            onChange={e => setKeys({ ...keys, claudeKey: e.target.value })} />
+                        <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: "var(--t2)" }}>Claude API Key</div>
+                            <input className="inp" type="password" placeholder="sk-ant-..." value={keys.claudeKey}
+                                onChange={e => setKeys({ ...keys, claudeKey: e.target.value })} />
+                        </div>
                     )}
                     {provider === "openai" && (
-                        <input className="inp" type="password" placeholder="sk-..." value={keys.openaiKey}
-                            onChange={e => setKeys({ ...keys, openaiKey: e.target.value })} />
+                        <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: "var(--t2)" }}>OpenAI API Key</div>
+                            <input className="inp" type="password" placeholder="sk-..." value={keys.openaiKey}
+                                onChange={e => setKeys({ ...keys, openaiKey: e.target.value })} />
+                        </div>
                     )}
                     {provider === "gemini" && (
-                        <input className="inp" type="password" placeholder="AIzaSy..." value={keys.geminiKey}
-                            onChange={e => setKeys({ ...keys, geminiKey: e.target.value })} />
+                        <div>
+                            <div style={{ fontSize: 11, fontWeight: 700, marginBottom: 4, color: "var(--t2)" }}>Gemini API Key</div>
+                            <input className="inp" type="password" placeholder="AIzaSy..." value={keys.geminiKey}
+                                onChange={e => setKeys({ ...keys, geminiKey: e.target.value })} />
+                        </div>
                     )}
 
                     <div style={{ borderTop: "1px solid var(--bdr)", margin: "12px 0", paddingTop: 12 }}>
