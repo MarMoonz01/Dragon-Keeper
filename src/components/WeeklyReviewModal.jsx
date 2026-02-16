@@ -22,7 +22,7 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
 
             if (!forceShow) {
                 if (!isSunday || lastReview === todayStr) {
-                    onCloseRef.current();
+                    setLoading(false);
                     return;
                 }
             }
