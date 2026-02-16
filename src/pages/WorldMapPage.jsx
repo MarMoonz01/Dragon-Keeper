@@ -28,7 +28,7 @@ function generatePath(zoneId, deadline) {
         // Zigzag x positions for visual interest
         const xPositions = [50, 35, 65, 40, 60, 50, 35, 65, 45, 50];
         const x = xPositions[i % xPositions.length];
-        const y = 90 - (i / (milestones.length - 1)) * 82; // 90 (bottom) → 8 (top)
+        const y = milestones.length > 1 ? 90 - (i / (milestones.length - 1)) * 82 : 50; // 90 (bottom) → 8 (top)
 
         return {
             id: `${zoneId}_${m.key}`,

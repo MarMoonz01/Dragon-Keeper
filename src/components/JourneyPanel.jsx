@@ -36,7 +36,7 @@ export default function JourneyPanel() {
     }, [currentBand, target]);
 
     // Progress percentage
-    const range = target - 4.0; // Full scale from 4.0
+    const range = Math.max(target - 4.0, 0.5); // Full scale from 4.0, min 0.5 to prevent division by zero
     const progress = Math.min(100, Math.max(0, ((currentBand - 4.0) / range) * 100));
     const targetPct = 100; // Target is always at the end
 

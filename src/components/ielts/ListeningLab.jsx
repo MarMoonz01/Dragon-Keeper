@@ -216,8 +216,8 @@ Return JSON ONLY:
                                     </React.Fragment>
                                 ))}
                                 {status === "review" && (
-                                    <span style={{ fontSize: 11, marginLeft: 8, color: results.details.find(d => d.id === q.id).correct ? "var(--teal)" : "var(--rose)" }}>
-                                        {results.details.find(d => d.id === q.id).correct ? "✅" : `❌ ${q.a}`}
+                                    <span style={{ fontSize: 11, marginLeft: 8, color: results.details.find(d => d.id === q.id)?.correct ? "var(--teal)" : "var(--rose)" }}>
+                                        {results.details.find(d => d.id === q.id)?.correct ? "✅" : `❌ ${q.a}`}
                                     </span>
                                 )}
                             </div>

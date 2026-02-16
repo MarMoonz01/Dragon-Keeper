@@ -14,7 +14,7 @@ export default function PronunciationHighlight({ transcript, issues }) {
                 return (
                     <React.Fragment key={i}>
                         {issue ? (
-                            <span title={`${iss?.ipa || ""} — ${issue.tip}`} className="pron-issue">
+                            <span title={`${issue?.ipa || ""} — ${issue.tip}`} className="pron-issue">
                                 {word}
                                 <span className="pron-warn">⚠</span>
                             </span>

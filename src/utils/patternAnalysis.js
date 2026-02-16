@@ -42,15 +42,16 @@ export async function getWeeklyPatterns(supabase) {
 
         // Calculate Averages
         const dayNames = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const bestDay = Object.keys(days).reduce((a, b) => (days[a].score / days[a].total || 0) > (days[b].score / days[b].total || 0) ? a : b);
-        const worstDay = Object.keys(days).reduce((a, b) => (days[a].score / days[a].total || 0) < (days[b].score / days[b].total || 0) ? a : b);
+        const dayAvg = (d) => d.total > 0 ? d.score / d.total : 0;
+        const bestDay = Object.keys(days).reduce((a, b) => dayAvg(days[a]) > dayAvg(days[b]) ? a : b);
+        const worstDay = Object.keys(days).reduce((a, b) => dayAvg(days[a]) < dayAvg(days[b]) ? a : b);
 
-        const avgEnergy = (energySum / count).toFixed(1);
-        const avgMood = (moodSum / count).toFixed(1);
+        const avgEnergy = count > 0 ? (energySum / count).toFixed(1) : "0.0";
+        const avgMood = count > 0 ? (moodSum / count).toFixed(1) : "0.0";
 
         return `30-Day Analysis:
-- Best Day: ${dayNames[bestDay]} (Avg Score: ${Math.round(days[bestDay].score / days[bestDay].total)}%)
-- Struggle Day: ${dayNames[worstDay]} (Avg Score: ${Math.round(days[worstDay].score / days[worstDay].total)}%)
+- Best Day: ${dayNames[bestDay]} (Avg Score: ${Math.round(dayAvg(days[bestDay]))}%)
+- Struggle Day: ${dayNames[worstDay]} (Avg Score: ${Math.round(dayAvg(days[worstDay]))}%)
 - Avg Energy: ${avgEnergy}/5, Avg Mood: ${avgMood}/5
 - Trend: User is most productive on ${dayNames[bestDay]}s. Energy levels are ${avgEnergy > 3.5 ? "high" : "moderate"}.`;
     } catch (e) {

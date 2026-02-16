@@ -37,14 +37,17 @@ export default function Dashboard() {
 
     const fetchCalHighlights = useCallback(async () => {
         if (!supabase) return;
-        const now = new Date();
-        const y = now.getFullYear(), m = now.getMonth();
-        const start = new Date(y, m, 1).toISOString().split('T')[0];
-        const end = new Date(y, m + 1, 0).toISOString().split('T')[0];
-        const { data } = await supabase.from('daily_summaries')
-            .select('date')
-            .gte('date', start).lte('date', end);
-        if (data) setCalHighlights(data.map(d => new Date(d.date + 'T00:00:00').getDate()));
+        try {
+            const now = new Date();
+            const y = now.getFullYear(), m = now.getMonth();
+            const start = new Date(y, m, 1).toISOString().split('T')[0];
+            const end = new Date(y, m + 1, 0).toISOString().split('T')[0];
+            const { data, error } = await supabase.from('daily_summaries')
+                .select('date')
+                .gte('date', start).lte('date', end);
+            if (error) { console.error("Calendar highlights fetch error:", error); return; }
+            if (data) setCalHighlights(data.map(d => new Date(d.date + 'T00:00:00').getDate()));
+        } catch (e) { console.error("Calendar highlights exception:", e); }
     }, []);
 
     useEffect(() => {

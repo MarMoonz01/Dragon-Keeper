@@ -3,7 +3,7 @@ import { useGame } from '../context/GameContext';
 
 export default function ChallengesCard() {
     const { challenges } = useGame();
-    const { daily, weekly } = challenges;
+    const { daily, weekly } = challenges || {};
 
     const renderChallenge = (c) => {
         const pct = Math.min(100, (c.current / c.target) * 100);

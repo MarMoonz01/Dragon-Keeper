@@ -182,8 +182,8 @@ Return JSON ONLY:
                                         {passage.headings.map(h => <option key={h.id} value={h.id}>{h.id}</option>)}
                                     </select>
                                     {status === "review" && (
-                                        <span style={{ fontSize: 11, color: results.details.find(d => d.id === q.id).correct ? "var(--teal)" : "var(--rose)" }}>
-                                            {results.details.find(d => d.id === q.id).correct ? "✅" : `❌ (Ans: ${q.a})`}
+                                        <span style={{ fontSize: 11, color: results.details.find(d => d.id === q.id)?.correct ? "var(--teal)" : "var(--rose)" }}>
+                                            {results.details.find(d => d.id === q.id)?.correct ? "✅" : `❌ (Ans: ${q.a})`}
                                         </span>
                                     )}
                                 </div>
@@ -213,7 +213,7 @@ Return JSON ONLY:
                                     </div>
                                     {status === "review" && (
                                         <div style={{ marginLeft: 28, marginTop: 8, fontSize: 11 }}>
-                                            {results.details.find(d => d.id === q.id).correct
+                                            {results.details.find(d => d.id === q.id)?.correct
                                                 ? <span style={{ color: "var(--teal)" }}>✅ Correct</span>
                                                 : <span style={{ color: "var(--rose)" }}>❌ Correct: {q.a}</span>
                                             }
