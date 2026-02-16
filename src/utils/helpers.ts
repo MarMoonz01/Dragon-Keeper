@@ -193,7 +193,11 @@ export const formatDate = (date: string | Date): string => {
 };
 
 export const formatTime = (timeStr: string): string => {
+    if (!timeStr || !timeStr.includes(':')) return '';
     const [h, m] = timeStr.split(':');
-    const d = new Date(); d.setHours(parseInt(h)); d.setMinutes(parseInt(m));
+    const hours = parseInt(h);
+    const mins = parseInt(m);
+    if (isNaN(hours) || isNaN(mins)) return '';
+    const d = new Date(); d.setHours(hours); d.setMinutes(mins);
     return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 };

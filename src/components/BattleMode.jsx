@@ -63,7 +63,7 @@ export default function BattleMode({ tasks, defeated, onDefeat, level }) {
                 <div className={"mon-em" + (shaking ? " hit" : "")}>{monster.em}</div>
                 <div style={{ fontWeight: 700, fontSize: 13, marginTop: 4 }}>{monster.name}</div>
                 <div style={{ fontSize: 10, color: "var(--t2)" }}>Level {monster.lv} {monster.type || "Monster"}</div>
-                <div className="mhpbar"><div className="mhpfill" style={{ width: `${mhp / monster.maxHp * 100}%` }} /></div>
+                <div className="mhpbar"><div className="mhpfill" style={{ width: `${monster.maxHp ? (mhp / monster.maxHp * 100) : 0}%` }} /></div>
                 <div style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 10, color: "var(--rose)" }}>{mhp}/{monster.maxHp} HP</div>
             </div>
             <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 4 }}>

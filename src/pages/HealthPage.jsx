@@ -7,16 +7,20 @@ import { useGame } from '../context/GameContext';
 export default function HealthPage() {
     const { health, updateHealth: onSave } = useGame();
     const [loc, setLoc] = useState(health);
-    const s = (k, v) => setLoc(p => ({ ...p, [k]: v }));
+    const setField = (k, v) => setLoc(p => ({ ...p, [k]: parseFloat(v) || 0 }));
     const [saved, setSaved] = useState(false);
     const [weeklyHealth, setWeeklyHealth] = useState([0, 0, 0, 0, 0, 0, 0]);
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", exerciseDays: "5", studyHours: "3", targetSleep: "8" });
 
     useEffect(() => {
+        setLoc(health);
+    }, [health]);
+
+    useEffect(() => {
         const h = load("nx-health-history");
         if (h && Array.isArray(h)) setWeeklyHealth(h);
-        const s = load("nx-settings");
-        if (s) setGoals(g => ({ ...g, ieltsTarget: s.ieltsTarget || g.ieltsTarget, exerciseDays: s.exerciseDays || g.exerciseDays, studyHours: s.studyHours || g.studyHours, targetSleep: s.targetSleep || g.targetSleep }));
+        const settings = load("nx-settings");
+        if (settings) setGoals(g => ({ ...g, ieltsTarget: settings.ieltsTarget || g.ieltsTarget, exerciseDays: settings.exerciseDays || g.exerciseDays, studyHours: settings.studyHours || g.studyHours, targetSleep: settings.targetSleep || g.targetSleep }));
     }, []);
 
     const handleSave = () => {
@@ -56,7 +60,7 @@ export default function HealthPage() {
                                     <div className="hm-n">{m.n}</div>
                                     <div className="hm-v">{parseFloat(loc[m.k] || 0).toLocaleString()} {m.u}</div>
                                 </div>
-                                <input className="hm-inp" type="number" min={m.min} max={m.max} step={m.step} value={loc[m.k] || 0} onChange={e => s(m.k, e.target.value)} />
+                                <input className="hm-inp" type="number" min={m.min} max={m.max} step={m.step} value={loc[m.k] || 0} onChange={e => setField(m.k, e.target.value)} />
                             </div>
                         ))}
                         <button className="btn btn-t" style={{ width: "100%", marginTop: 14, justifyContent: "center" }} onClick={handleSave}>
@@ -78,12 +82,20 @@ export default function HealthPage() {
                     <div className="card">
                         <div className="ct">Health Score</div>
                         <div style={{ textAlign: "center", padding: "10px 0" }}>
-                            <Ring size={100} stroke={8} pct={loc.sleep ? Math.min((loc.sleep / 8) * 100, 100) : 0} color="var(--rose)">
-                                <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 700, color: "var(--rose)", display: "block" }}>
-                                    {loc.sleep ? Math.round((loc.sleep / 8) * 100) : 0}
-                                </span>
-                                <span style={{ fontSize: 9, color: "var(--t2)" }}>/100</span>
-                            </Ring>
+                            {(() => {
+                                const sleepPct = loc.sleep ? Math.min((loc.sleep / 8) * 100, 100) : 0;
+                                const stepsPct = loc.steps ? Math.min((loc.steps / 10000) * 100, 100) : 0;
+                                const waterPct = loc.water ? Math.min((loc.water / 3) * 100, 100) : 0;
+                                const compositePct = Math.round((sleepPct + stepsPct + waterPct) / 3);
+                                return (
+                                    <Ring size={100} stroke={8} pct={compositePct} color="var(--rose)">
+                                        <span style={{ fontFamily: "'JetBrains Mono',monospace", fontSize: 22, fontWeight: 700, color: "var(--rose)", display: "block" }}>
+                                            {compositePct}
+                                        </span>
+                                        <span style={{ fontSize: 9, color: "var(--t2)" }}>/100</span>
+                                    </Ring>
+                                );
+                            })()}
                         </div>
                         {[["Sleep Quality", "var(--teal)", loc.sleep ? Math.round((loc.sleep / 8) * 100) : 0], ["Activity", "var(--green)", loc.steps ? Math.min(Math.round((loc.steps / 10000) * 100), 100) : 0], ["Hydration", "var(--sky)", loc.water ? Math.min(Math.round((loc.water / 3) * 100), 100) : 0]].map(([l, c, v]) => (
                             <div key={l} style={{ marginBottom: 8 }}>

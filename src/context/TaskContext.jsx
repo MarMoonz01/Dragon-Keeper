@@ -138,11 +138,13 @@ Respond with ONLY the JSON array, no explanation.`;
             const task = prev.find(t => t.id === id);
             if (!task || task.done) return prev;
 
-            addXP(xp);
-            showToast("⚡", "Task Complete!", "+" + xp + " XP earned! 🐉");
-
             const upd = prev.map(x => x.id === id ? { ...x, done: true } : x);
-            updateTaskStatus(upd);
+            // Side effects deferred outside the state updater
+            setTimeout(() => {
+                addXP(xp);
+                showToast("⚡", "Task Complete!", "+" + xp + " XP earned! 🐉");
+                updateTaskStatus(upd);
+            }, 0);
             return upd;
         });
     }, [addXP, updateTaskStatus, showToast]);
@@ -169,8 +171,10 @@ Respond with ONLY the JSON array, no explanation.`;
         setTasks(prev => {
             const t = prev.find(x => x.id === id);
             const u = prev.filter(x => x.id !== id);
-            updateTaskStatus(u);
-            if (t) showToast("🗑️", "Task Deleted", t.name);
+            setTimeout(() => {
+                updateTaskStatus(u);
+                if (t) showToast("🗑️", "Task Deleted", t.name);
+            }, 0);
             return u;
         });
     };

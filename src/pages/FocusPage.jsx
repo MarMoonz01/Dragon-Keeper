@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useTasks } from '../context/TaskContext';
 
@@ -8,7 +8,7 @@ export default function FocusPage() {
     const { completeTask } = useTasks();
     const task = state?.task;
 
-    const onExit = () => navigate('/dashboard');
+    const onExit = useCallback(() => navigate('/dashboard'), [navigate]);
     const onComplete = (id) => completeTask(id, task?.xp || 20);
     const DURATION = 25 * 60;
     const [timeLeft, setTimeLeft] = useState(DURATION);

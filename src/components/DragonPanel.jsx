@@ -2,7 +2,7 @@ import React from 'react';
 import { DRAGONS } from '../data/constants';
 
 export default function DragonPanel({ xp, lv, done, streak, tasks = [], stage, nextStage, skill }) {
-    const mxp = lv * 100, pct = (xp % mxp) / mxp * 100;
+    const mxp = Math.max(lv * 100, 1), pct = (xp % mxp) / mxp * 100;
 
     // Fallback if stage not passed (e.g. during refactor)
     const currentStage = stage || DRAGONS[0];

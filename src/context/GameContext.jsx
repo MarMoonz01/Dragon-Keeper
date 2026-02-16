@@ -20,7 +20,7 @@ export function GameProvider({ children }) {
     // Initial Load
     useEffect(() => {
         setDragon(load("nx-dragon") || { xp: 0, level: 1 });
-        setStats(load("nx-stats") || { monstersDefeated: 0, streak: 0, healthScore: 0, streakFreezes: 1, totalTasks: 0, ieltsTasks: 0 });
+        setStats(load("nx-stats") || { monstersDefeated: 0, streak: 0, healthScore: 0, streakFreezes: 1, totalTasks: 0, ieltsTasks: 0, healthTasks: 0, workTasks: 0, socialTasks: 0 });
         setHealth(load("nx-health") || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 });
         setUnlockedAchievements(load("nx-achievements") || []);
 
@@ -143,18 +143,23 @@ export function GameProvider({ children }) {
     };
 
     const defeatMonster = (damage = 10) => {
-        if (!activeMonster) return;
+        if (!activeMonster || activeMonster.currentHp <= 0) return;
         const newHp = Math.max(0, activeMonster.currentHp - damage);
 
         if (newHp === 0) {
             // Monster Defeated
             addXP(activeMonster.reward);
-            updateStats({ monstersDefeated: (stats.monstersDefeated || 0) + 1 });
+            setStats(prev => {
+                const u = { ...prev, monstersDefeated: (prev.monstersDefeated || 0) + 1 };
+                save("nx-stats", u);
+                return u;
+            });
             updateChallengeProgress("monster", 1);
 
             // Spawn next (or same if max level)
+            const monsterLevel = activeMonster.level;
             setTimeout(() => {
-                const nextLevel = (activeMonster.level >= 5 && activeMonster.level < 10) ? 5 : (activeMonster.level < 5 ? activeMonster.level + 1 : 10);
+                const nextLevel = (monsterLevel >= 5 && monsterLevel < 10) ? 5 : (monsterLevel < 5 ? monsterLevel + 1 : 10);
                 spawnMonster(nextLevel);
             }, 1000);
         }
@@ -251,7 +256,11 @@ export function GameProvider({ children }) {
         });
 
         // Apply Item Effect
-        if (itemId === "freeze") updateStats({ streakFreezes: (stats.streakFreezes || 0) + 1 });
+        if (itemId === "freeze") setStats(prev => {
+            const u = { ...prev, streakFreezes: (prev.streakFreezes || 0) + 1 };
+            save("nx-stats", u);
+            return u;
+        });
         if (itemId === "heal" && activeMonster) {
             // Heal Dragon? Wait, we don't track Dragon HP yet, maybe heal the User's "HP" in tasks?
             // Or maybe reset tasks HP? leaving as placeholder or "Full Health in Tasks"

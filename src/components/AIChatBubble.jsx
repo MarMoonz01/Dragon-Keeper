@@ -23,7 +23,7 @@ export default function AIChatBubble() {
     }, [messages, isOpen]);
 
     const handleSend = async () => {
-        if (!input.trim()) return;
+        if (!input.trim() || loading) return;
         const msg = input;
         setInput("");
         setMessages(p => [...p, { role: "user", content: msg }]);
@@ -94,9 +94,9 @@ AI: "You're Level 12 (Target: 10 ✅), but your Band is 6.0 (Target: 6.5 ❌). Y
                     } else if (action === "EDIT") {
                         const tid = parseInt(p[0]);
                         const update = {};
-                        if (p[1].includes(":")) update.time = p[1];
-                        else update.name = p[1];
-                        editTask(tid, update);
+                        if (p[1] && p[1].includes(":")) update.time = p[1];
+                        else if (p[1]) update.name = p[1];
+                        if (Object.keys(update).length > 0) editTask(tid, update);
                     } else if (action === "COMPLETE") {
                         completeTask(parseInt(p[0]), 20);
                     } else if (action === "REDUCE_LOAD") {
@@ -187,7 +187,7 @@ AI: "You're Level 12 (Target: 10 ✅), but your Band is 6.0 (Target: 6.5 ❌). Y
                             placeholder="Type a command..."
                             value={input}
                             onChange={e => setInput(e.target.value)}
-                            onKeyDown={e => e.key === "Enter" && handleSend()}
+                            onKeyDown={e => e.key === "Enter" && !loading && handleSend()}
                         />
                         <button className="btn btn-g" style={{ padding: "0 14px" }} onClick={handleSend}>➤</button>
                     </div>
