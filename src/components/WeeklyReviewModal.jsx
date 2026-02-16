@@ -28,20 +28,26 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
             }
 
             // Fetch last 7 days summary
-            if (supabase) {
-                const start = new Date();
-                start.setDate(today.getDate() - 7);
-                const { data } = await supabase.from('daily_summaries')
-                    .select('*')
-                    .gte('date', start.toISOString().split('T')[0])
-                    .order('date', { ascending: true });
+            try {
+                if (supabase) {
+                    const start = new Date();
+                    start.setDate(today.getDate() - 7);
+                    const { data, error } = await supabase.from('daily_summaries')
+                        .select('*')
+                        .gte('date', start.toISOString().split('T')[0])
+                        .order('date', { ascending: true });
 
-                if (data) {
-                    processReview(data);
+                    if (error) { console.error("Weekly review fetch error:", error); setLoading(false); return; }
+                    if (data && data.length > 0) {
+                        await processReview(data);
+                    } else {
+                        setLoading(false); // No data
+                    }
                 } else {
-                    setLoading(false); // No data
+                    setLoading(false);
                 }
-            } else {
+            } catch (e) {
+                console.error("Weekly review error:", e);
                 setLoading(false);
             }
         };
