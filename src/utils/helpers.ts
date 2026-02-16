@@ -40,9 +40,9 @@ const API_KEYS = {
 };
 
 const MODELS = {
-    claude: "claude-3-5-sonnet-20240620", // Updated to latest stable Sonnet
-    openai: "gpt-5.2",
-    gemini: "gemini-3.0-flash",
+    claude: "claude-sonnet-4-5-20250929",
+    openai: "gpt-4o",
+    gemini: "gemini-2.0-flash",
 };
 
 const MAX_RETRIES = 2;

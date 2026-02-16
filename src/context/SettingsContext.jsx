@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { load, save } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 
@@ -56,11 +56,15 @@ export function SettingsProvider({ children }) {
 
         // 2. Wipe Supabase (if connected)
         if (supabase) {
-            const { error } = await supabase.from('scores').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            await supabase.from('notebook').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            await supabase.from('practice_logs').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            await supabase.from('daily_plans').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-            await supabase.from('daily_summaries').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            const tables = ['scores', 'notebook', 'practice_logs', 'daily_plans', 'daily_summaries'];
+            for (const table of tables) {
+                try {
+                    const { error } = await supabase.from(table).delete().neq('id', '00000000-0000-0000-0000-000000000000');
+                    if (error) console.warn(`Failed to clear ${table}:`, error.message);
+                } catch (e) {
+                    console.warn(`Exception clearing ${table}:`, e);
+                }
+            }
         }
 
         // 3. Clear LocalStorage
@@ -73,7 +77,7 @@ export function SettingsProvider({ children }) {
         window.location.reload();
     };
 
-    const value = {
+    const value = useMemo(() => ({
         theme,
         toggleTheme,
         showSettings,
@@ -83,7 +87,7 @@ export function SettingsProvider({ children }) {
         gcal,
         updateGcal,
         resetGame
-    };
+    }), [theme, showSettings, showOnboarding, gcal]);
 
     return (
         <SettingsContext.Provider value={value}>

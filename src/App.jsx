@@ -55,19 +55,21 @@ function AppContent() {
 
         <main className="main">
           <div className="page-enter" key={location.pathname}>
-            <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--t2)', fontSize: 13 }}>Loading...</div>}>
-              <Routes>
-                <Route path="/" element={<Navigate to="/dashboard" replace />} />
-                <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/analysis" element={<ErrorBoundary><AnalysisPage /></ErrorBoundary>} />
-                <Route path="/hatchery" element={<HatcheryPage />} />
-                <Route path="/worldmap" element={<WorldMapPage />} />
-                <Route path="/library" element={<LibraryPage />} />
-                <Route path="/focus" element={<FocusPage />} />
-                <Route path="/ielts" element={<ErrorBoundary><IELTSPage /></ErrorBoundary>} />
-                <Route path="/health" element={<HealthPage />} />
-              </Routes>
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60vh', color: 'var(--t2)', fontSize: 13 }}>Loading...</div>}>
+                <Routes>
+                  <Route path="/" element={<Navigate to="/dashboard" replace />} />
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  <Route path="/analysis" element={<ErrorBoundary><AnalysisPage /></ErrorBoundary>} />
+                  <Route path="/hatchery" element={<HatcheryPage />} />
+                  <Route path="/worldmap" element={<WorldMapPage />} />
+                  <Route path="/library" element={<LibraryPage />} />
+                  <Route path="/focus" element={<FocusPage />} />
+                  <Route path="/ielts" element={<ErrorBoundary><IELTSPage /></ErrorBoundary>} />
+                  <Route path="/health" element={<HealthPage />} />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </div>
         </main>
       </div>

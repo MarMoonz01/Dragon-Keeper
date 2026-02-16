@@ -4,11 +4,12 @@ import { useSettings } from '../context/SettingsContext';
 
 export default function SettingsModal() {
     const { showSettings, setShowSettings: onClose, resetGame: onReset } = useSettings();
-    if (!showSettings) return null;
     const [provider, setProvider] = useState("claude");
     const [keys, setKeys] = useState({ claudeKey: "", openaiKey: "", geminiKey: "", supabaseUrl: "", supabaseKey: "" });
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", studyHours: "3", targetSleep: "8", exerciseDays: "5" });
     const [initialSupabase, setInitialSupabase] = useState({ url: "", key: "" });
+
+    if (!showSettings) return null;
 
     useEffect(() => {
         const s = load("nx-settings");
@@ -65,9 +66,9 @@ export default function SettingsModal() {
                         Select which AI model to use for generating content.
                     </div>
                     <select className="inp" value={provider} onChange={e => setProvider(e.target.value)}>
-                        <option value="claude">Anthropic (Claude 3.5 Sonnet)</option>
-                        <option value="openai">OpenAI (GPT-5.2)</option>
-                        <option value="gemini">Google (Gemini 3.0 Flash)</option>
+                        <option value="claude">Anthropic (Claude Sonnet 4.5)</option>
+                        <option value="openai">OpenAI (GPT-4o)</option>
+                        <option value="gemini">Google (Gemini 2.0 Flash)</option>
                     </select>
                 </div>
 

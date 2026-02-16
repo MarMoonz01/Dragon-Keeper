@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { load, save } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 
@@ -30,22 +30,31 @@ export function IELTSProvider({ children }) {
     }, []);
 
     const fetchScores = async () => {
-        const { data } = await supabase.from('scores').select('*').order('created_at', { ascending: false });
-        if (data && data.length > 0) {
-            setRealScores(data);
-            setScores(data[0]);
-            localStorage.setItem("nx-ielts-scores", JSON.stringify(data));
-        }
+        try {
+            const { data, error } = await supabase.from('scores').select('*').order('created_at', { ascending: false });
+            if (error) { console.error("fetchScores error:", error); return; }
+            if (data && data.length > 0) {
+                setRealScores(data);
+                setScores(data[0]);
+                localStorage.setItem("nx-ielts-scores", JSON.stringify(data));
+            }
+        } catch (e) { console.error("fetchScores exception:", e); }
     };
 
     const fetchNotebook = async () => {
-        const { data } = await supabase.from('notebook').select('*').order('created_at', { ascending: false });
-        if (data) setNotebook(data);
+        try {
+            const { data, error } = await supabase.from('notebook').select('*').order('created_at', { ascending: false });
+            if (error) { console.error("fetchNotebook error:", error); return; }
+            if (data) setNotebook(data);
+        } catch (e) { console.error("fetchNotebook exception:", e); }
     };
 
     const fetchPracticeLogs = async () => {
-        const { data } = await supabase.from('practice_logs').select('*').order('created_at', { ascending: false }).limit(20);
-        if (data) setPracticeLogs(data);
+        try {
+            const { data, error } = await supabase.from('practice_logs').select('*').order('created_at', { ascending: false }).limit(20);
+            if (error) { console.error("fetchPracticeLogs error:", error); return; }
+            if (data) setPracticeLogs(data);
+        } catch (e) { console.error("fetchPracticeLogs exception:", e); }
     };
 
     const addToNotebook = async (item) => {
@@ -71,7 +80,7 @@ export function IELTSProvider({ children }) {
         return { error };
     };
 
-    const value = {
+    const value = useMemo(() => ({
         ieltsTarget,
         scores,
         realScores,
@@ -84,7 +93,7 @@ export function IELTSProvider({ children }) {
         fetchNotebook,
         fetchScores,
         fetchPracticeLogs
-    };
+    }), [ieltsTarget, scores, realScores, notebook, practiceLogs]);
 
     return (
         <IELTSContext.Provider value={value}>

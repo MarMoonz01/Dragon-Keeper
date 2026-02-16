@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { TASKS0 } from '../data/constants';
@@ -247,7 +247,7 @@ Respond in this JSON format:
         showToast("📤", "Synced!", tasks.filter(t => t.calSync).length + " tasks pushed to Google Calendar");
     };
 
-    const value = {
+    const value = useMemo(() => ({
         tasks,
         setTasks,
         dailyPlan,
@@ -263,7 +263,7 @@ Respond in this JSON format:
         deleteTask,
         endDay,
         onGcalPush
-    };
+    }), [tasks, dailyPlan, analyzing, showCheckIn, gcalPushing, toast, completeTask, showToast]);
 
     return (
         <TaskContext.Provider value={value}>

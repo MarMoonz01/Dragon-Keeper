@@ -289,7 +289,7 @@ export function GameProvider({ children }) {
         return null;
     }, [currentStage]);
 
-    const value = {
+    const value = useMemo(() => ({
         dragon,
         stats,
         health,
@@ -309,7 +309,7 @@ export function GameProvider({ children }) {
         unlockedAchievements,
         currentStage,
         nextStage
-    };
+    }), [dragon, stats, health, levelUp, dragonSkill, activeMonster, challenges, unlockedAchievements, currentStage, nextStage]);
 
     return (
         <GameContext.Provider value={value}>
