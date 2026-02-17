@@ -9,8 +9,6 @@ export default function SettingsModal() {
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", studyHours: "3", targetSleep: "8", exerciseDays: "5" });
     const [initialSupabase, setInitialSupabase] = useState({ url: "", key: "" });
 
-    if (!showSettings) return null;
-
     useEffect(() => {
         const s = load("nx-settings");
         const storedModel = localStorage.getItem("nx-ai-model");
@@ -39,6 +37,8 @@ export default function SettingsModal() {
         window.addEventListener('keydown', handleEsc);
         return () => window.removeEventListener('keydown', handleEsc);
     }, [onClose]);
+
+    if (!showSettings) return null;
 
     const handleSave = () => {
         save("nx-settings", { provider, ...keys, ...goals });
