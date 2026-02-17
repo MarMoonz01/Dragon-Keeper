@@ -163,6 +163,28 @@ export default function SpeakingDojo({ setErrorMsg }) {
     const [recTime, setRecTime] = useState(0);
     const [audioSupport, setAudioSupport] = useState(null); // null=checking, true, false
     const [model, setModel] = useAIModel();
+    const [extraTopics, setExtraTopics] = useState(() => {
+        try { return JSON.parse(localStorage.getItem("nx-speaking-topics")) || []; } catch { return []; }
+    });
+    const [generatingTopic, setGeneratingTopic] = useState(false);
+    const allTopics = [...TOPICS, ...extraTopics];
+
+    const generateTopic = async () => {
+        setGeneratingTopic(true);
+        try {
+            const r = await ai(
+                [{ role: "user", content: `Generate one new, unique IELTS Speaking Part 2 cue card topic. Return ONLY the topic text (e.g. "Describe a place you visited that left a strong impression on you"). No instructions or labels.` }],
+                "You are an IELTS Speaking exam designer. Return only the topic text."
+            );
+            const newTopic = r.trim().replace(/^["']|["']$/g, "");
+            const updated = [...extraTopics, newTopic];
+            setExtraTopics(updated);
+            localStorage.setItem("nx-speaking-topics", JSON.stringify(updated));
+        } catch (e) {
+            console.error("Topic generation failed", e);
+        }
+        setGeneratingTopic(false);
+    };
 
     const recognitionRef = useRef(null);
     const analyserRef = useRef(null);
@@ -438,7 +460,7 @@ export default function SpeakingDojo({ setErrorMsg }) {
                     </div>
                 </div>
 
-                {TOPICS.map((t, i) => {
+                {allTopics.map((t, i) => {
                     const ems = ["🗣️", "📱", "🏙️", "🤔", "📚"];
                     const isActive = topic === t && phase !== "idle" && phase !== "result";
                     const isDone = topic === t && phase === "result";
@@ -461,6 +483,10 @@ export default function SpeakingDojo({ setErrorMsg }) {
                         </div>
                     );
                 })}
+
+                <button className="btn btn-gh btn-sm" onClick={generateTopic} disabled={generatingTopic || phase !== "idle"} style={{ width: "100%", marginTop: 8 }}>
+                    {generatingTopic ? "Generating..." : "🎲 Generate New Topic"}
+                </button>
 
                 <div className="aibx" style={{ marginTop: 14 }}>
                     {"💡 Band 7 Tips:\n\n• Fluency: Natural connectors — 'Well, the thing is...', 'What I find interesting is...'\n• Vocabulary: Avoid repetition. Use idiomatic phrases.\n• Grammar: Mix tenses. Use conditionals: 'If I were to choose...'\n• Pronunciation: Stress content words. Use rising/falling intonation."}

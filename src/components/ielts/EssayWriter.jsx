@@ -18,6 +18,35 @@ export default function EssayWriter() {
     const [history, setHistory] = useState([]);
     const [analyzing, setAnalyzing] = useState(false);
     const [patternAnalysis, setPatternAnalysis] = useState("");
+    const [customPrompt, setCustomPrompt] = useState("");
+    const [generatingPrompt, setGeneratingPrompt] = useState(false);
+
+    // Load cached AI prompt for today
+    useEffect(() => {
+        const todayStr = new Date().toISOString().split("T")[0];
+        const cacheKey = `nx-writing-prompt-${writingTask}-${todayStr}`;
+        const cached = localStorage.getItem(cacheKey);
+        if (cached) setCustomPrompt(cached);
+        else setCustomPrompt("");
+    }, [writingTask]);
+
+    const generatePrompt = async () => {
+        setGeneratingPrompt(true);
+        const type = writingTask === 1 ? "IELTS Academic Writing Task 1 (describe a chart/graph/diagram)" : "IELTS Academic Writing Task 2 (argumentative essay)";
+        try {
+            const r = await ai(
+                [{ role: "user", content: `Generate one new, unique ${type} prompt. Return ONLY the prompt text, no instructions or labels. Make it realistic and exam-style.` }],
+                "You are an IELTS exam prompt designer. Return only the prompt text."
+            );
+            const prompt = r.trim();
+            setCustomPrompt(prompt);
+            const todayStr = new Date().toISOString().split("T")[0];
+            localStorage.setItem(`nx-writing-prompt-${writingTask}-${todayStr}`, prompt);
+        } catch (e) {
+            console.error("Prompt generation failed", e);
+        }
+        setGeneratingPrompt(false);
+    };
 
     // Load History — Supabase first, localStorage fallback
     useEffect(() => {
@@ -145,16 +174,19 @@ Band 5: Uses only a limited range of structures. Attempts complex sentences but 
 
             {subTab === "write" && (
                 <div className="card">
-                    <div style={{ display: "flex", gap: 10, marginBottom: 14 }}>
+                    <div style={{ display: "flex", gap: 10, marginBottom: 14, alignItems: "center" }}>
                         <button className={"btn " + (writingTask === 1 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(1)}>Task 1 (Report)</button>
                         <button className={"btn " + (writingTask === 2 ? "btn-p" : "btn-gh")} onClick={() => setWritingTask(2)}>Task 2 (Essay)</button>
+                        <button className="btn btn-gh btn-sm" onClick={generatePrompt} disabled={generatingPrompt} style={{ marginLeft: "auto" }}>
+                            {generatingPrompt ? "Generating..." : "🎲 New Topic"}
+                        </button>
                     </div>
                     <div className="ins" style={{ marginBottom: 14 }}>
                         <span className="ins-ic">📋</span>
                         <span>
-                            <strong>{writingTask === 1 ? "Task 1:" : "Task 2:"}</strong> {writingTask === 1
+                            <strong>{writingTask === 1 ? "Task 1:" : "Task 2:"}</strong> {customPrompt || (writingTask === 1
                                 ? "The chart below shows global energy consumption by source. Summarise the info..."
-                                : "\"Technology has made modern life more complex rather than easier. To what extent do you agree?\""}
+                                : "\"Technology has made modern life more complex rather than easier. To what extent do you agree?\"")}
                         </span>
                     </div>
                     <textarea className="inp" placeholder={writingTask === 1 ? "Describe trends, compare data..." : "Write your essay here..."} value={essay} onChange={e => setEssay(e.target.value)} rows={12} style={{ fontFamily: "serif", fontSize: 16, lineHeight: 1.6 }} />

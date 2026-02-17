@@ -31,6 +31,8 @@ export default function Dashboard() {
     const [showShop, setShowShop] = useState(false);
     const [showAdd, setShowAdd] = useState(false);
     const [calHighlights, setCalHighlights] = useState([]);
+    const [dayHistory, setDayHistory] = useState(null);
+    const [dayHistoryLoading, setDayHistoryLoading] = useState(false);
 
     const done = tasks.filter(t => t.done).length;
     const pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
@@ -53,6 +55,27 @@ export default function Dashboard() {
     useEffect(() => {
         fetchCalHighlights();
     }, [fetchCalHighlights]);
+
+    const handleDayClick = async (day, month, year) => {
+        if (!supabase) return;
+        const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
+        setDayHistoryLoading(true);
+        setDayHistory(null);
+        try {
+            const [summaryRes, planRes] = await Promise.all([
+                supabase.from('daily_summaries').select('*').eq('date', dateStr).maybeSingle(),
+                supabase.from('daily_plans').select('*').eq('date', dateStr).maybeSingle()
+            ]);
+            setDayHistory({
+                date: dateStr,
+                summary: summaryRes.data || null,
+                plan: planRes.data || null
+            });
+        } catch (e) {
+            console.error("Failed to load day history:", e);
+        }
+        setDayHistoryLoading(false);
+    };
 
     const onConnect = () => updateGcal({ ...gcal, connected: true });
 
@@ -90,7 +113,38 @@ export default function Dashboard() {
                     <GCalPanel tasks={tasks} />
                     <div className="card">
                         <div className="ct">Calendar</div>
-                        <MiniCal hi={calHighlights.length > 0 ? calHighlights : []} />
+                        <MiniCal hi={calHighlights.length > 0 ? calHighlights : []} onDayClick={handleDayClick} />
+                        {dayHistoryLoading && <div style={{ fontSize: 11, color: "var(--t2)", textAlign: "center", padding: 10 }}>Loading...</div>}
+                        {dayHistory && (
+                            <div style={{ marginTop: 12, padding: 12, background: "rgba(255,255,255,0.03)", borderRadius: 10, border: "1px solid var(--bdr)" }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                                    <div style={{ fontSize: 12, fontWeight: 700 }}>{dayHistory.date}</div>
+                                    <button className="btn btn-gh btn-sm" onClick={() => setDayHistory(null)} style={{ fontSize: 10, padding: "2px 8px" }}>✕</button>
+                                </div>
+                                {dayHistory.summary ? (
+                                    <div style={{ fontSize: 11, color: "var(--t2)", lineHeight: 1.6 }}>
+                                        {dayHistory.summary.mood && <div>Mood: {dayHistory.summary.mood}</div>}
+                                        {dayHistory.summary.health_score != null && <div>Health: {dayHistory.summary.health_score}/100</div>}
+                                        {dayHistory.summary.tasks_done != null && <div>Tasks: {dayHistory.summary.tasks_done}/{dayHistory.summary.tasks_total || "?"}</div>}
+                                        {dayHistory.summary.xp_earned != null && <div>XP: +{dayHistory.summary.xp_earned}</div>}
+                                        {dayHistory.summary.summary && <div style={{ marginTop: 6, fontStyle: "italic" }}>{dayHistory.summary.summary}</div>}
+                                    </div>
+                                ) : (
+                                    <div style={{ fontSize: 11, color: "var(--t3)" }}>No summary for this day.</div>
+                                )}
+                                {dayHistory.plan && dayHistory.plan.tasks && (
+                                    <div style={{ marginTop: 10, borderTop: "1px solid var(--bdr)", paddingTop: 8 }}>
+                                        <div style={{ fontSize: 10, fontWeight: 700, color: "var(--t2)", marginBottom: 6, textTransform: "uppercase", letterSpacing: 1 }}>Planned Tasks</div>
+                                        {(Array.isArray(dayHistory.plan.tasks) ? dayHistory.plan.tasks : []).map((t, i) => (
+                                            <div key={i} style={{ fontSize: 11, color: "var(--t2)", padding: "3px 0", display: "flex", gap: 6, alignItems: "center" }}>
+                                                <span style={{ color: t.done ? "var(--teal)" : "var(--t3)" }}>{t.done ? "✓" : "○"}</span>
+                                                <span style={{ textDecoration: t.done ? "line-through" : "none", opacity: t.done ? 0.7 : 1 }}>{t.name || t.text || "Task"}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

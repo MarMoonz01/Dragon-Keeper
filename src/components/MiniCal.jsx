@@ -1,6 +1,6 @@
 import React from 'react';
 
-const MiniCal = React.memo(function MiniCal({ hi = [] }) {
+const MiniCal = React.memo(function MiniCal({ hi = [], onDayClick }) {
     const n = new Date(), y = n.getFullYear(), m = n.getMonth();
     const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), dip = new Date(y, m, 0).getDate();
     const MN = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -14,7 +14,11 @@ const MiniCal = React.memo(function MiniCal({ hi = [] }) {
             <div className="mcg">
                 {["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"].map(d => <div key={d} className="mcdh">{d}</div>)}
                 {days.slice(0, 35).map((day, i) => (
-                    <div key={i} className={`mcd${day.o ? " om" : ""}${day.d === n.getDate() && !day.o ? " today" : ""}${!day.o && hi.includes(day.d) ? " he" : ""}`}>{day.d}</div>
+                    <div key={i}
+                        className={`mcd${day.o ? " om" : ""}${day.d === n.getDate() && !day.o ? " today" : ""}${!day.o && hi.includes(day.d) ? " he" : ""}`}
+                        style={!day.o && hi.includes(day.d) && onDayClick ? { cursor: "pointer" } : undefined}
+                        onClick={() => !day.o && onDayClick && onDayClick(day.d, m, y)}
+                    >{day.d}</div>
                 ))}
             </div>
         </div>
