@@ -89,8 +89,8 @@ Context: ${context}
 ${patternCtx ? `Weekly Patterns: ${patternCtx}` : ""}
 Create exactly 10 tasks as a JSON array. Each task must have:
 - id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
-- desc (string): 1-2 sentence actionable instruction explaining WHAT to do and HOW to approach it
-- tip (string): a short productivity or effectiveness tip specific to this task
+- desc (string): 2-3 sentences of SPECIFIC, practical, real-life detail. Not vague — tell the user exactly what to do step by step. Examples: for morning routine "Wash your face with cold water to wake up, stretch for 5 minutes, then drink a glass of warm water with lemon"; for IELTS listening "Do Cambridge 18 Test 2 Section 3-4, focus on note completion questions, replay tricky parts twice"; for lunch "Have a protein-rich meal like grilled salmon with rice and vegetables, grab a coffee to recharge for the afternoon"; for reading "Read a passage about climate change, practice T/F/NG questions, time yourself to 20 minutes max"
+- tip (string): a practical life hack or study trick for this specific task, e.g. "Use the 1.25x speed trick on listening audio to train your ear" or "Eat away from your desk to give your brain a real break"
 Schedule tasks ONLY between ${String(wakeH).padStart(2, "0")}:00-${String(sleepH).padStart(2, "0")}:00. ${profile?.goals?.includes("ielts") ? "Front-load IELTS before noon." : ""} Include health, work, and mindfulness tasks. Mix categories.
 Respond with ONLY the JSON array, no explanation.`;
 
