@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import Ring from '../components/Ring';
 import { load, save } from '../utils/helpers';
+import { loadGameState } from '../utils/supabaseSync';
 
 import { useGame } from '../context/GameContext';
 
@@ -17,8 +18,17 @@ export default function HealthPage() {
     }, [health]);
 
     useEffect(() => {
-        const h = load("nx-health-history");
-        if (h && Array.isArray(h)) setWeeklyHealth(h);
+        const hydrate = async () => {
+            const gs = await loadGameState();
+            if (gs?.health_history && Array.isArray(gs.health_history) && gs.health_history.length > 0) {
+                setWeeklyHealth(gs.health_history);
+                localStorage.setItem('nx-health-history', JSON.stringify(gs.health_history));
+            } else {
+                const h = load("nx-health-history");
+                if (h && Array.isArray(h)) setWeeklyHealth(h);
+            }
+        };
+        hydrate();
         const settings = load("nx-settings");
         if (settings) setGoals(g => ({ ...g, ieltsTarget: settings.ieltsTarget || g.ieltsTarget, exerciseDays: settings.exerciseDays || g.exerciseDays, studyHours: settings.studyHours || g.studyHours, targetSleep: settings.targetSleep || g.targetSleep }));
     }, []);

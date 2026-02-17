@@ -4,6 +4,7 @@ import { ai, load, save } from '../../utils/helpers';
 import { useGame } from '../../context/GameContext';
 import { useIELTS } from '../../context/IELTSContext';
 import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip } from 'recharts';
+import { loadWritingHistory, addWritingHistoryEntry } from '../../utils/supabaseSync';
 
 export default function EssayWriter() {
     const { refreshSkill } = useGame();
@@ -18,10 +19,18 @@ export default function EssayWriter() {
     const [analyzing, setAnalyzing] = useState(false);
     const [patternAnalysis, setPatternAnalysis] = useState("");
 
-    // Load History
+    // Load History — Supabase first, localStorage fallback
     useEffect(() => {
-        const h = load("nx-writing-history") || [];
-        setHistory(h);
+        const hydrateHistory = async () => {
+            const sbHistory = await loadWritingHistory();
+            if (sbHistory && sbHistory.length > 0) {
+                setHistory(sbHistory);
+                localStorage.setItem('nx-writing-history', JSON.stringify(sbHistory));
+            } else {
+                setHistory(load("nx-writing-history") || []);
+            }
+        };
+        hydrateHistory();
     }, [scores]); // Reload when new score added
 
     const scoreEssay = async () => {
@@ -90,6 +99,7 @@ Band 5: Uses only a limited range of structures. Attempts complex sentences but 
             const newHistory = [result, ...history].slice(0, 50);
             save("nx-writing-history", newHistory);
             setHistory(newHistory);
+            addWritingHistoryEntry(result);
             refreshSkill();
 
             // Also log to IELTSContext tracker

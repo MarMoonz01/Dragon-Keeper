@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { ZONES, ZONE_MILESTONES, DRAGONS } from '../data/constants';
 import { load, save } from '../utils/helpers';
 import MapNode from '../components/MapNode';
+import { loadGameState } from '../utils/supabaseSync';
 
 const BOSS_SIZE = 72;
 
@@ -68,10 +69,24 @@ export default function WorldMapPage() {
     const [pendingScore, setPendingScore] = useState(3);
     const [viewMode, setViewMode] = useState("map"); // "map" or "plan"
 
-    // Load state
+    // Load state — Supabase first, localStorage fallback
     useEffect(() => {
-        const q = load("nx-quests"); if (q) setQuests(q);
-        const d = load("nx-deadlines"); if (d) setDeadlines(d);
+        const hydrate = async () => {
+            const gs = await loadGameState();
+            if (gs?.quests && Object.keys(gs.quests).length > 0) {
+                setQuests(gs.quests);
+                localStorage.setItem('nx-quests', JSON.stringify(gs.quests));
+            } else {
+                const q = load("nx-quests"); if (q) setQuests(q);
+            }
+            if (gs?.deadlines && Object.keys(gs.deadlines).length > 0) {
+                setDeadlines(gs.deadlines);
+                localStorage.setItem('nx-deadlines', JSON.stringify(gs.deadlines));
+            } else {
+                const d = load("nx-deadlines"); if (d) setDeadlines(d);
+            }
+        };
+        hydrate();
     }, []);
 
     const zoneDeadline = deadlines[zone];

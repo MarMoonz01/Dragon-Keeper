@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { load, save } from '../utils/helpers';
 import { DRAGONS, DRAGON_SKILLS, ACHIEVEMENTS, CHALLENGE_TEMPLATES, MONSTERS } from '../data/constants';
+import { loadGameState, queueGameStateUpdate } from '../utils/supabaseSync';
 
 const GameContext = createContext();
 
@@ -17,23 +18,81 @@ export function GameProvider({ children }) {
     const [activeMonster, setActiveMonster] = useState(null);
     const [unlockedAchievements, setUnlockedAchievements] = useState([]);
 
-    // Initial Load
+    // Initial Load — Supabase first, localStorage fallback, one-time migration
     useEffect(() => {
-        setDragon(load("nx-dragon") || { xp: 0, level: 1 });
-        setStats(load("nx-stats") || { monstersDefeated: 0, streak: 0, healthScore: 0, streakFreezes: 1, totalTasks: 0, ieltsTasks: 0, healthTasks: 0, workTasks: 0, socialTasks: 0 });
-        setHealth(load("nx-health") || { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 });
-        setUnlockedAchievements(load("nx-achievements") || []);
+        const hydrate = async () => {
+            const defaults = {
+                dragon: { xp: 0, level: 1 },
+                stats: { monstersDefeated: 0, streak: 0, healthScore: 0, streakFreezes: 1, totalTasks: 0, ieltsTasks: 0, healthTasks: 0, workTasks: 0, socialTasks: 0 },
+                health: { sleep: 0, steps: 0, water: 0, hr: 0, calories: 0 },
+                achievements: [],
+            };
 
-        // Load or Init Monster
-        const savedMonster = load("nx-monster-state");
-        if (savedMonster && savedMonster.currentHp > 0) {
-            setActiveMonster(savedMonster);
-        } else {
-            spawnMonster(1);
-        }
+            const gs = await loadGameState();
 
-        // Load or Init Challenges
-        refreshChallenges();
+            // Helper: pick Supabase value, fall back to localStorage, then default
+            const pick = (gsCol, lsKey, def) => {
+                if (gs && gs[gsCol] != null) return gs[gsCol];
+                return load(lsKey) || def;
+            };
+
+            const d = pick('dragon', 'nx-dragon', defaults.dragon);
+            const s = pick('stats', 'nx-stats', defaults.stats);
+            const h = pick('health', 'nx-health', defaults.health);
+            const a = pick('achievements', 'nx-achievements', defaults.achievements);
+            const m = pick('monster_state', 'nx-monster-state', null);
+
+            setDragon(d);
+            setStats(s);
+            setHealth(h);
+            setUnlockedAchievements(a);
+
+            // Cache to localStorage (use direct setItem to avoid re-queuing to Supabase)
+            localStorage.setItem('nx-dragon', JSON.stringify(d));
+            localStorage.setItem('nx-stats', JSON.stringify(s));
+            localStorage.setItem('nx-health', JSON.stringify(h));
+            localStorage.setItem('nx-achievements', JSON.stringify(a));
+
+            // Monster
+            if (m && m.currentHp > 0) {
+                setActiveMonster(m);
+                localStorage.setItem('nx-monster-state', JSON.stringify(m));
+            } else {
+                spawnMonster(1);
+            }
+
+            // One-time migration: if Supabase row had no meaningful data but localStorage does
+            if (gs && gs.dragon?.xp === 0 && gs.dragon?.level === 1) {
+                const localDragon = load('nx-dragon');
+                if (localDragon && (localDragon.xp > 0 || localDragon.level > 1)) {
+                    // localStorage has real data but Supabase is default — push up
+                    const cols = {
+                        dragon: localDragon,
+                        stats: load('nx-stats') || defaults.stats,
+                        health: load('nx-health') || defaults.health,
+                        achievements: load('nx-achievements') || defaults.achievements,
+                        monster_state: load('nx-monster-state'),
+                        challenges: load('nx-challenges') || {},
+                        quests: load('nx-quests') || {},
+                        deadlines: load('nx-deadlines') || {},
+                        weekly_goals: load('nx-weekly-goals'),
+                        last_review: load('nx-last-review'),
+                        health_history: load('nx-health-history') || [],
+                    };
+                    for (const [col, val] of Object.entries(cols)) {
+                        if (val != null) queueGameStateUpdate(col, val);
+                    }
+                }
+            }
+
+            // Challenges (load from Supabase or localStorage)
+            if (gs && gs.challenges && (gs.challenges.lastDaily || gs.challenges.daily?.length)) {
+                setChallenges(gs.challenges);
+                localStorage.setItem('nx-challenges', JSON.stringify(gs.challenges));
+            }
+            refreshChallenges();
+        };
+        hydrate();
     }, []);
 
     const spawnMonster = (level) => {

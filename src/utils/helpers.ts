@@ -1,10 +1,26 @@
 /// <reference types="vite/client" />
 import { supabase } from './supabaseClient';
+import { queueGameStateUpdate, saveProfile } from './supabaseSync';
 
 export interface Message {
     role: string;
     content: string;
 }
+
+// Mapping from localStorage keys to game_state columns
+const GAME_STATE_KEY_MAP: Record<string, string> = {
+    'nx-dragon': 'dragon',
+    'nx-stats': 'stats',
+    'nx-health': 'health',
+    'nx-achievements': 'achievements',
+    'nx-monster-state': 'monster_state',
+    'nx-challenges': 'challenges',
+    'nx-quests': 'quests',
+    'nx-deadlines': 'deadlines',
+    'nx-weekly-goals': 'weekly_goals',
+    'nx-last-review': 'last_review',
+    'nx-health-history': 'health_history',
+};
 
 export function load(key: string): any {
     try {
@@ -21,6 +37,16 @@ export function save(key: string, value: any): void {
         localStorage.setItem(key, JSON.stringify(value));
     } catch (e) {
         console.error("Error saving " + key, e);
+    }
+
+    // Route to Supabase sync
+    const gsColumn = GAME_STATE_KEY_MAP[key];
+    if (gsColumn) {
+        queueGameStateUpdate(gsColumn, value);
+        return;
+    }
+    if (key === 'nx-profile') {
+        saveProfile(value);
     }
 }
 

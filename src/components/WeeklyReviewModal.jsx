@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { ai, load, save } from '../utils/helpers';
+import { loadGameState } from '../utils/supabaseSync';
 import Loader from './Loader';
 
 export default function WeeklyReviewModal({ onClose, forceShow = false }) {
@@ -17,8 +18,17 @@ export default function WeeklyReviewModal({ onClose, forceShow = false }) {
         const checkAndLoad = async () => {
             const today = new Date();
             const isSunday = today.getDay() === 0;
-            const lastReview = load("nx-last-review");
+            let lastReview = load("nx-last-review");
             const todayStr = today.toISOString().split('T')[0];
+
+            // Try Supabase if localStorage is empty
+            if (!lastReview) {
+                const gs = await loadGameState();
+                if (gs?.last_review) {
+                    lastReview = gs.last_review;
+                    localStorage.setItem('nx-last-review', JSON.stringify(lastReview));
+                }
+            }
 
             if (!forceShow) {
                 if (!isSunday || lastReview === todayStr) {

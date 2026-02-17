@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
+import { loadProfile } from '../utils/supabaseSync';
 import { TASKS0 } from '../data/constants';
 import { useGame } from './GameContext';
 import { useSettings } from './SettingsContext';
@@ -60,8 +61,12 @@ export function TaskProvider({ children }) {
                 history = data;
             }
 
-            // 2. Load profile
-            const profile = load("nx-profile");
+            // 2. Load profile (localStorage first, Supabase fallback)
+            let profile = load("nx-profile");
+            if (!profile) {
+                profile = await loadProfile();
+                if (profile) localStorage.setItem('nx-profile', JSON.stringify(profile));
+            }
             const profileCtx = profile
                 ? `User: ${profile.name || "User"}${profile.age ? `, age ${profile.age}` : ""}${profile.status ? `, ${profile.status.replace(/_/g, " ")}` : ""}. Goals: ${(profile.goals || []).join(", ") || "general"}. Wake: ${profile.wakeTime || "07:00"}, Sleep: ${profile.sleepTime || "23:00"}. Free time: ${profile.freeSlots || "afternoon"}.${profile.currentBand ? ` Current IELTS: ${profile.currentBand}.` : ""}`
                 : "No profile set.";
