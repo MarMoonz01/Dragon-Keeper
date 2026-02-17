@@ -1,85 +1,89 @@
-# NEXUS: Gamified AI Life OS 🐲
+# NEXUS: Gamified AI Life OS
 
-**Nexus** is a React-based "Life Operating System" that gamifies your daily productivity, health tracking, and learning (IELTS) with RPG mechanics and AI assistance.
+**Nexus** is a React-based "Life Operating System" that gamifies your daily productivity, health tracking, and IELTS learning with RPG mechanics and AI assistance.
 
-![Nexus Dashboard](https://via.placeholder.com/800x400?text=Nexus+Dashboard+Preview)
+## Key Features
 
-## 🌟 Key Features
+### Gamification
+- **Dragon Companion** — grows and evolves as you complete tasks (7 evolution stages)
+- **RPG Combat** — turn-based battles against procrastination monsters
+- **World Map** — quest-based progression with milestones and deadlines
+- **22 Achievements** — streak, IELTS, health, combat, and hidden categories
+- **XP Shop** — streak freezes, XP boosts, and more
 
-### 🎮 Gamification
-- **Dragon Mascot**: Your personal companion that grows as you complete tasks.
-- **RPG Stats**: Level up your Focus, Intelligence, Health, and Discipline.
-- **Battle Mode**: Turn-based combat against "monster" tasks.
-- **World Map**: Visual progression system with unlockable zones.
+### AI Integration (BYOK)
+- **Daily Planner** — AI-generated personalized daily schedules
+- **IELTS Essay Scorer** — Task 1 & 2 evaluation with official band descriptors (Bands 5–8)
+- **Speaking Dojo** — AI conversation partner with pronunciation feedback
+- **AI Chat** — context-aware floating assistant
+- Supports **Claude**, **OpenAI GPT-4o**, and **Gemini 3 Flash**
 
-### 🤖 AI Integration
-- **Daily Briefing**: AI-generated morning reports based on your calendar and goals.
-- **Essay Evaluator**: IELTS Task 1 & 2 scoring with Gemini 1.5 Pro (Band 9.0 logic).
-- **Speaking Dojo**: AI conversation partner for language practice.
-- **Magic Chat**: Context-aware assistant for quick help.
+### Productivity & Health
+- **Task Management** — categorized tasks with XP rewards
+- **Focus Timer** — 25-min Pomodoro with visual animations
+- **Health Dashboard** — sleep, steps, water, heart rate, calories
+- **Weekly Review** — AI-powered weekly insights and goal setting
+- **PDF Library** — upload documents and chat with AI about them
 
-### 📅 Productivity & Health
-- **Task Management**: Drag-and-drop tasks with priority levels.
-- **Focus Timer**: Pomodoro-style timer with visual "coffee" animations.
-- **Health Tracker**: Log water, sleep, steps, and calories with simple UI.
-- **Google Calendar**: Two-way sync for schedule management.
+### Architecture
+- **Frontend**: React 19, Vite 7, React Router 7
+- **Styling**: Vanilla CSS with custom properties (dark/light theme)
+- **Backend**: Supabase (8 tables, Edge Functions)
+- **Storage**: Local-first with async Supabase sync (1.5s debounced writes)
+- **PWA**: Installable Progressive Web App
 
-### 🔧 Architecture
-- **Tech**: React, Vite, Tailwind-like CSS (Vanilla), Supabase (Edge Functions).
-- **PWA**: Fully offline-capable Progressive Web App.
-- **Storage**: Local-first data with Supabase sync options.
-- **Security**: Secure API key management via Edge Functions.
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Node.js 18+
-- Supabase Account (optional for sync/AI proxy)
-- Google Gemini or Anthropic Claude API Key
+- An AI API key (Claude, OpenAI, or Gemini)
+- Supabase account (optional — app works offline with localStorage)
 
 ### Installation
 
-1.  **Clone the repository**
-    ```bash
-    git clone https://github.com/yourusername/nexus-app.git
-    cd nexus-app
-    ```
+```bash
+git clone https://github.com/MarMoonz01/Dragon-Keeper.git
+cd Dragon-Keeper
+npm install
+```
 
-2.  **Install dependencies**
-    ```bash
-    npm install
-    ```
+### Configure Environment (optional)
 
-3.  **Configure Environment**
-    Create a `.env` file (optional for local dev):
-    ```env
-    VITE_SUPABASE_URL=your_supabase_url
-    VITE_SUPABASE_ANON_KEY=your_supabase_key
-    ```
-    *Note: API Keys can be entered in the App Settings UI.*
+Create a `.env` file for Supabase sync:
+```env
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_KEY=your_supabase_anon_key
+```
 
-4.  **Run Development Server**
-    ```bash
-    npm run dev
-    ```
+API keys are entered in the app's Settings UI — no env vars needed for AI.
 
-### Building for Production
+### Run
 
-To create a production-ready build:
+```bash
+npm run dev
+```
+
+### Build for Production
 
 ```bash
 npm run build
 ```
 
-The output will be in the `dist/` directory, ready to deploy to Vercel, Netlify, or Github Pages.
+Output goes to `dist/`, ready to deploy to Vercel, Netlify, or any static host.
 
-## 🛠️ Tech Stack
-- **Frontend**: React 18, Vite
-- **Language**: JavaScript / TypeScript (Hybrid)
-- **Styling**: Vanilla CSS (Variables, Flexbox/Grid)
-- **AI**: Google Gemini 1.5 Pro, Anthropic Claude 3.5 Sonnet
-- **Backend**: Supabase (Database, Edge Functions, Auth)
-- **Routing**: React Router v6
+## Tech Stack
 
-## 📜 License
-MIT License. Built with ❤️ by [Your Name].
+| Layer | Technology |
+|---|---|
+| Framework | React 19 |
+| Build | Vite 7 |
+| Routing | React Router 7 |
+| Styling | Vanilla CSS (variables, flexbox/grid) |
+| AI | Claude Sonnet, GPT-4o, Gemini 3 Flash |
+| Backend | Supabase (Postgres + Edge Functions) |
+| Charts | Recharts |
+| PDF | pdf.js |
+
+## License
+
+MIT

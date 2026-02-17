@@ -140,7 +140,7 @@ Answer based ONLY on the document provided. Keep it concise.`;
     };
 
     return (
-        <div className="h-full flex flex-col relative" style={{ height: "100vh", overflow: "hidden" }}>
+        <div style={{ height: "100vh", display: "flex", flexDirection: "column", position: "relative", overflow: "hidden" }}>
             {/* Header */}
             <div className="ph" style={{ flexShrink: 0 }}>
                 <div className="ph-title">The Archives</div>

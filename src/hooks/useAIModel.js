@@ -26,6 +26,6 @@ export function useAIModel() {
 
 export const AI_MODELS = [
     { id: "claude", label: "Claude", sub: "Sonnet", color: "#e8a25a", em: "🟠" },
-    { id: "openai", label: "GPT-5.2", sub: "OpenAI", color: "#74c69d", em: "🟢" },
-    { id: "gemini", label: "Gemini", sub: "3.0 Flash", color: "#74b4f7", em: "🔵" },
+    { id: "openai", label: "GPT-4o", sub: "OpenAI", color: "#74c69d", em: "🟢" },
+    { id: "gemini", label: "Gemini", sub: "3 Flash", color: "#74b4f7", em: "🔵" },
 ];
