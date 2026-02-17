@@ -31,15 +31,35 @@ export default function EssayWriter() {
         const criteria = writingTask === 1 ? "Task Achievement" : "Task Response";
         const type = writingTask === 1 ? "Academic Writing Task 1 (Report)" : "Academic Writing Task 2 (Essay)";
 
-        const systemPrompt = `You are an expert IELTS Examiner (Band 9.0). 
+        const systemPrompt = `You are an expert IELTS Writing Examiner (Band 9.0).
         Analyze the following ${type}.
-        Provide a strict evaluation based on: 
-        1. ${criteria}
-        2. Coherence & Cohesion
-        3. Lexical Resource
-        4. Grammatical Range & Accuracy.
-        
-        Return JSON format only: 
+        Score against the OFFICIAL IELTS Writing Band Descriptors below. Match the candidate to the band that BEST fits their performance in each criterion.
+
+═══ ${criteria.toUpperCase()} (TR) ═══
+Band 8: Sufficiently addresses all parts of the task. Presents a well-developed response to the question with relevant, extended and supported ideas.
+Band 7: Addresses all parts of the task. Presents a clear position throughout the response. Presents, extends and supports main ideas, but there may be a tendency to over-generalise and/or supporting ideas may lack focus.
+Band 6: Addresses all parts of the task although some parts may be more fully covered than others. Presents a relevant position although the conclusions may become unclear or repetitive. Presents relevant main ideas but some may be inadequately developed/unclear.
+Band 5: Addresses the task only partially; the format may be inappropriate in places. Expresses a position but the development is not always clear and there may be no conclusions drawn. Presents some main ideas but these are limited and not sufficiently developed; there may be irrelevant detail.
+
+═══ COHERENCE & COHESION (CC) ═══
+Band 8: Sequences information and ideas logically. Manages all aspects of cohesion well. Uses paragraphing sufficiently and appropriately.
+Band 7: Logically organises information and ideas; there is clear progression throughout. Uses a range of cohesive devices appropriately although there may be some under-/over-use. Presents a clear central topic within each paragraph.
+Band 6: Arranges information and ideas coherently and there is a clear overall progression. Uses cohesive devices effectively, but cohesion within and/or between sentences may be faulty or mechanical. May not always use referencing clearly or appropriately.
+Band 5: Presents information with some organisation but there may be a lack of overall progression. Makes inadequate, inaccurate or over-use of cohesive devices. May be repetitive because of lack of referencing and substitution.
+
+═══ LEXICAL RESOURCE (LR) ═══
+Band 8: Uses a wide range of vocabulary fluently and flexibly to convey precise meanings. Skilfully uses uncommon lexical items but there may be occasional inaccuracies in word choice and collocation. Produces rare errors in spelling and/or word formation.
+Band 7: Uses a sufficient range of vocabulary to allow some flexibility and precision. Uses less common lexical items with some awareness of style and collocation. May produce occasional errors in word choice, spelling and/or word formation.
+Band 6: Uses an adequate range of vocabulary for the task. Attempts to use less common vocabulary but with some inaccuracy. Makes some errors in spelling and/or word formation, but they do not impede communication.
+Band 5: Uses a limited range of vocabulary, but this is minimally adequate for the task. May make noticeable errors in spelling and/or word formation that may cause some difficulty for the reader.
+
+═══ GRAMMATICAL RANGE & ACCURACY (GRA) ═══
+Band 8: Uses a wide range of structures. The majority of sentences are error-free. Makes only very occasional errors or inappropriacies.
+Band 7: Uses a variety of complex structures. Produces frequent error-free sentences. Has good control of grammar and punctuation but may make a few errors.
+Band 6: Uses a mix of simple and complex sentence forms. Makes some errors in grammar and punctuation but they rarely reduce communication.
+Band 5: Uses only a limited range of structures. Attempts complex sentences but these tend to be less accurate than simple sentences. May make frequent grammatical errors and punctuation may be faulty; errors can cause some difficulty for the reader.
+
+        Return JSON format only:
         { "band": number, "breakdown": { "tr": number, "cc": number, "lr": number, "gra": number }, "feedback": "string (strengths)", "corrections": ["improvement point 1", "improvement point 2"] }`;
 
         try {

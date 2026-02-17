@@ -68,11 +68,31 @@ CRITICALLY IMPORTANT — you have the actual audio recording. Please:
 4. Give IPA transcription for both what was heard vs correct
 5. Severity: "high" = significantly impacts intelligibility, "medium" = noticeable, "low" = minor
 
-Score based on OFFICIAL IELTS Speaking rubric:
-- Fluency & Coherence: flow, hesitation, self-correction, connectives
-- Lexical Resource: range, precision, collocation, idioms
-- Grammatical Range & Accuracy: complexity, accuracy
-- Pronunciation: phoneme accuracy, stress, intonation, connected speech
+Score against the OFFICIAL IELTS Speaking Band Descriptors below. Match the candidate to the band that BEST fits their performance in each criterion.
+
+═══ FLUENCY & COHERENCE ═══
+Band 8: Speaks fluently with only occasional repetition or self-correction; hesitation is usually content-related. Develops topics coherently and appropriately.
+Band 7: Speaks at length without noticeable effort or loss of coherence. May demonstrate language-related hesitation at times, or some repetition and/or self-correction. Uses a range of connectives and discourse markers with some flexibility.
+Band 6: Is willing to speak at length, though may lose coherence at times due to occasional repetition, self-correction or hesitation. Uses a range of connectives and discourse markers but not always appropriately.
+Band 5: Usually maintains flow of speech but uses repetition, self-correction and/or slow speech to keep going. May over-use certain connectives and discourse markers. Produces simple speech fluently, but more complex communication causes fluency problems.
+
+═══ LEXICAL RESOURCE ═══
+Band 8: Uses a wide vocabulary resource readily and flexibly to convey precise meaning. Uses less common and idiomatic vocabulary skilfully, with occasional inaccuracies. Uses paraphrase effectively as required.
+Band 7: Uses vocabulary resource flexibly to discuss a variety of topics. Uses some less common and idiomatic vocabulary and shows some awareness of style and collocation, with some inappropriate choices. Uses paraphrase effectively.
+Band 6: Has a wide enough vocabulary to discuss topics at length and make meaning clear in spite of inappropriacies. Generally paraphrases successfully.
+Band 5: Manages to talk about familiar and unfamiliar topics but uses vocabulary with limited flexibility. Attempts to use paraphrase but with mixed success.
+
+═══ GRAMMATICAL RANGE & ACCURACY ═══
+Band 8: Uses a wide range of structures flexibly. Produces a majority of error-free sentences with only very occasional inappropriacies or basic/non-systematic errors.
+Band 7: Uses a range of complex structures with some flexibility. Frequently produces error-free sentences, though some grammatical mistakes persist.
+Band 6: Uses a mix of simple and complex structures, but with limited flexibility. May make frequent mistakes with complex structures, though these rarely cause comprehension problems.
+Band 5: Produces basic sentence forms with reasonable accuracy. Uses a limited range of more complex structures, but these usually contain errors and may cause some comprehension problems.
+
+═══ PRONUNCIATION ═══
+Band 8: Uses a wide range of pronunciation features. Sustains flexible use of features, with only occasional lapses. Is easy to understand throughout; L1 accent has minimal effect on intelligibility.
+Band 7: Shows all the positive features of Band 6 and some, but not all, of the positive features of Band 8. Generally uses a range of pronunciation features with variable control.
+Band 6: Uses a range of pronunciation features with mixed control. Shows some effective use of features but this is not sustained. Can generally be understood throughout, though mispronunciation of individual words or sounds reduces clarity at times.
+Band 5: Shows all the positive features of Band 4 and some, but not all, of the positive features of Band 6. Generally intelligible but pronunciation errors sometimes cause strain for the listener.
 
 Return STRICT JSON only (no markdown, no explanation):
 ${baseJSON}`
@@ -100,6 +120,32 @@ IMPORTANT INSTRUCTIONS:
 - For Thai speakers: focus on th/d, r/l, final consonants, word stress
 - Be specific and actionable in feedback
 - Score realistically (most learners: 5.5-7.0)
+
+Score against the OFFICIAL IELTS Speaking Band Descriptors below. Match the candidate to the band that BEST fits their performance in each criterion.
+
+═══ FLUENCY & COHERENCE ═══
+Band 8: Speaks fluently with only occasional repetition or self-correction; hesitation is usually content-related. Develops topics coherently and appropriately.
+Band 7: Speaks at length without noticeable effort or loss of coherence. May demonstrate language-related hesitation at times, or some repetition and/or self-correction. Uses a range of connectives and discourse markers with some flexibility.
+Band 6: Is willing to speak at length, though may lose coherence at times due to occasional repetition, self-correction or hesitation. Uses a range of connectives and discourse markers but not always appropriately.
+Band 5: Usually maintains flow of speech but uses repetition, self-correction and/or slow speech to keep going. May over-use certain connectives and discourse markers. Produces simple speech fluently, but more complex communication causes fluency problems.
+
+═══ LEXICAL RESOURCE ═══
+Band 8: Uses a wide vocabulary resource readily and flexibly to convey precise meaning. Uses less common and idiomatic vocabulary skilfully, with occasional inaccuracies. Uses paraphrase effectively as required.
+Band 7: Uses vocabulary resource flexibly to discuss a variety of topics. Uses some less common and idiomatic vocabulary and shows some awareness of style and collocation, with some inappropriate choices. Uses paraphrase effectively.
+Band 6: Has a wide enough vocabulary to discuss topics at length and make meaning clear in spite of inappropriacies. Generally paraphrases successfully.
+Band 5: Manages to talk about familiar and unfamiliar topics but uses vocabulary with limited flexibility. Attempts to use paraphrase but with mixed success.
+
+═══ GRAMMATICAL RANGE & ACCURACY ═══
+Band 8: Uses a wide range of structures flexibly. Produces a majority of error-free sentences with only very occasional inappropriacies or basic/non-systematic errors.
+Band 7: Uses a range of complex structures with some flexibility. Frequently produces error-free sentences, though some grammatical mistakes persist.
+Band 6: Uses a mix of simple and complex structures, but with limited flexibility. May make frequent mistakes with complex structures, though these rarely cause comprehension problems.
+Band 5: Produces basic sentence forms with reasonable accuracy. Uses a limited range of more complex structures, but these usually contain errors and may cause some comprehension problems.
+
+═══ PRONUNCIATION ═══
+Band 8: Uses a wide range of pronunciation features. Sustains flexible use of features, with only occasional lapses. Is easy to understand throughout; L1 accent has minimal effect on intelligibility.
+Band 7: Shows all the positive features of Band 6 and some, but not all, of the positive features of Band 8. Generally uses a range of pronunciation features with variable control.
+Band 6: Uses a range of pronunciation features with mixed control. Shows some effective use of features but this is not sustained. Can generally be understood throughout, though mispronunciation of individual words or sounds reduces clarity at times.
+Band 5: Shows all the positive features of Band 4 and some, but not all, of the positive features of Band 6. Generally intelligible but pronunciation errors sometimes cause strain for the listener.
 
 Return STRICT JSON only (no markdown):
 ${baseJSON}`
