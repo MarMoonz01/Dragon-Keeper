@@ -3086,6 +3086,11 @@ select.inp {
   animation: task-check 300ms ease;
 }
 
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 /* ===== MOBILE UX FIXES (U4) ===== */
 @media (max-width: 600px) {
 

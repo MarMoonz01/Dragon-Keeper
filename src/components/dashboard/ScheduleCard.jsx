@@ -66,7 +66,7 @@ export default function ScheduleCard({ onAddClick, pct }) {
                         disabled={regenerating}
                         onClick={async () => { setRegenerating(true); try { await regenerateSchedule(); } finally { setRegenerating(false); } }}
                         title="Regenerate schedule with AI"
-                    >{regenerating ? "..." : "🔄"}</button>
+                    >{regenerating ? <span style={{ display: "inline-block", animation: "spin 1s linear infinite" }}>⟳</span> : "🔄"}</button>
                     <button className="btn btn-gh btn-sm" onClick={onAddClick}>+ Task</button>
                 </div>
             </div>
@@ -83,26 +83,47 @@ export default function ScheduleCard({ onAddClick, pct }) {
                 </button>
             </div>
             <div className="sl">
-                {displayTasks.map(t => (
-                    <TaskItem
-                        key={t.id}
-                        t={t}
-                        editingId={editingId}
-                        editForm={editForm}
-                        setEditForm={setEditForm}
-                        saveEdit={saveEdit}
-                        cancelEdit={cancelEdit}
-                        startEdit={startEdit}
-                        onComplete={onComplete}
-                        onFocus={onFocus}
-                        onDelete={onDelete}
-                        isNow={isNow}
-                    />
-                ))}
-                {displayTasks.length === 0 && (
-                    filterInc
-                        ? <EmptyState emoji="🎉" title="All tasks conquered!" subtitle="Your dragon rests, but tomorrow brings new challenges." />
-                        : <EmptyState emoji="🐉" title="Your dragon is waiting!" subtitle="Complete your first task to awaken it." action={{ label: "+ Add Task", onClick: onAddClick }} />
+                {regenerating ? (
+                    <div style={{ padding: "20px 0", display: "flex", flexDirection: "column", gap: 10, opacity: 0.5 }}>
+                        <div style={{ textAlign: "center", fontSize: 12, color: "var(--t2)", marginBottom: 4 }}>
+                            <span style={{ display: "inline-block", animation: "spin 1s linear infinite", fontSize: 18 }}>⟳</span>
+                            <div style={{ marginTop: 6 }}>Generating your schedule...</div>
+                        </div>
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} style={{ display: "flex", gap: 12, alignItems: "center", padding: "10px 12px", background: "rgba(255,255,255,.03)", borderRadius: 10 }}>
+                                <div style={{ width: 20, height: 20, borderRadius: 6, background: "rgba(255,255,255,.06)" }} />
+                                <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                                    <div style={{ height: 12, borderRadius: 4, background: "rgba(255,255,255,.06)", width: `${60 + i * 8}%` }} />
+                                    <div style={{ height: 8, borderRadius: 3, background: "rgba(255,255,255,.04)", width: "30%" }} />
+                                </div>
+                                <div style={{ width: 40, height: 16, borderRadius: 8, background: "rgba(255,255,255,.06)" }} />
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <>
+                        {displayTasks.map(t => (
+                            <TaskItem
+                                key={t.id}
+                                t={t}
+                                editingId={editingId}
+                                editForm={editForm}
+                                setEditForm={setEditForm}
+                                saveEdit={saveEdit}
+                                cancelEdit={cancelEdit}
+                                startEdit={startEdit}
+                                onComplete={onComplete}
+                                onFocus={onFocus}
+                                onDelete={onDelete}
+                                isNow={isNow}
+                            />
+                        ))}
+                        {displayTasks.length === 0 && (
+                            filterInc
+                                ? <EmptyState emoji="🎉" title="All tasks conquered!" subtitle="Your dragon rests, but tomorrow brings new challenges." />
+                                : <EmptyState emoji="🐉" title="Your dragon is waiting!" subtitle="Complete your first task to awaken it." action={{ label: "+ Add Task", onClick: onAddClick }} />
+                        )}
+                    </>
                 )}
             </div>
         </div>
