@@ -143,7 +143,18 @@ export default function SettingsModal() {
                     )}
 
                     <div style={{ borderTop: "1px solid var(--bdr)", margin: "12px 0", paddingTop: 12 }}>
-                        <label style={{ display: "block", marginBottom: 6, fontSize: 12, color: "var(--t2)" }}>Supabase (Optional)</label>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 6 }}>
+                            <label style={{ fontSize: 12, color: "var(--t2)", margin: 0 }}>Supabase (Optional)</label>
+                            <span style={{
+                                fontSize: 9, fontWeight: 700, letterSpacing: ".5px", textTransform: "uppercase",
+                                padding: "2px 8px", borderRadius: 10,
+                                background: (keys.supabaseUrl && keys.supabaseKey) ? "rgba(52,211,153,.12)" : "rgba(255,255,255,.06)",
+                                color: (keys.supabaseUrl && keys.supabaseKey) ? "var(--teal)" : "var(--t3)",
+                                border: `1px solid ${(keys.supabaseUrl && keys.supabaseKey) ? "rgba(52,211,153,.3)" : "var(--bdr)"}`
+                            }}>
+                                {(keys.supabaseUrl && keys.supabaseKey) ? "Connected" : "Not configured"}
+                            </span>
+                        </div>
                         <input className="inp" placeholder="Supabase URL (https://...)" value={keys.supabaseUrl || ""} onChange={e => setKeys({ ...keys, supabaseUrl: e.target.value })} style={{ marginBottom: 8 }} />
                         <input className="inp" placeholder="Supabase Anon Key" type="password" value={keys.supabaseKey || ""} onChange={e => setKeys({ ...keys, supabaseKey: e.target.value })} />
                     </div>

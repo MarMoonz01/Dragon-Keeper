@@ -3,6 +3,8 @@ import { useGame } from '../context/GameContext';
 
 const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, cancelEdit, startEdit, onComplete, onFocus, onDelete, isNow }) => {
     const [showXp, setShowXp] = React.useState(false);
+    const [expanded, setExpanded] = React.useState(false);
+    const hasDetails = !!(t.desc || t.tip);
 
     const handleComplete = (e) => {
         e.stopPropagation();
@@ -62,13 +64,29 @@ const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, ca
                         {t.done && "✓"}
                     </div>
 
-                    <div style={{ flex: 1 }} onClick={() => !t.done && startEdit(t)}>
-                        <div className="tn">{t.name}</div>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <div className="tn" onClick={() => !t.done && startEdit(t)} style={{ cursor: !t.done ? "pointer" : "default" }}>{t.name}</div>
+                            {hasDetails && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setExpanded(!expanded); }}
+                                    style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 10, color: "var(--t3)", padding: "0 2px", transition: "transform .2s", transform: expanded ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}
+                                    title={expanded ? "Hide details" : "Show details"}
+                                    aria-label="Toggle task details"
+                                >▸</button>
+                            )}
+                        </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
                             <span className="tm">⏰ {t.time}</span>
                             {t.calSync && <span style={{ fontSize: 9, color: "var(--teal)" }}>📅</span>}
                             {isNow(t.time) && !t.done && <span className="badge bt" style={{ fontSize: 8, padding: "1px 6px", animation: "pulse 2s infinite" }}>⏰ NOW</span>}
                         </div>
+                        {expanded && hasDetails && (
+                            <div style={{ marginTop: 6, padding: "6px 0", borderTop: "1px solid var(--bdr)" }}>
+                                {t.desc && <div style={{ fontSize: 11, color: "var(--t2)", lineHeight: 1.5, marginBottom: t.tip ? 4 : 0 }}>{t.desc}</div>}
+                                {t.tip && <div style={{ fontSize: 10, color: "var(--t3)", fontStyle: "italic", lineHeight: 1.4 }}>💡 {t.tip}</div>}
+                            </div>
+                        )}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                         <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 3 }}>

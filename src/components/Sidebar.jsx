@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { DRAGONS } from '../data/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useGame } from '../context/GameContext';
+import { supabase } from '../utils/supabaseClient';
 
 export default function Sidebar({ isOpen, onShowWeeklyReview }) {
     const navigate = useNavigate();
@@ -28,6 +29,10 @@ export default function Sidebar({ isOpen, onShowWeeklyReview }) {
             <div className="sb-logo">
                 <div className="sb-logo-main">NEXUS</div>
                 <div className="sb-logo-sub">AI Life Secretary</div>
+                <div style={{ fontSize: 9, color: "var(--t3)", letterSpacing: 1, textTransform: "uppercase", marginTop: 4, display: "flex", alignItems: "center", gap: 5 }}>
+                    <span style={{ width: 7, height: 7, borderRadius: "50%", background: supabase ? "var(--teal)" : "var(--t3)", display: "inline-block", boxShadow: supabase ? "0 0 6px var(--teal)" : "none" }} />
+                    {supabase ? "Cloud Sync" : "Local Only"}
+                </div>
             </div>
             <div className="sb-nav">
                 <div style={{ fontSize: 9, color: "var(--t3)", letterSpacing: 2, padding: "10px 8px 3px", fontWeight: 700, textTransform: "uppercase" }}>Core</div>

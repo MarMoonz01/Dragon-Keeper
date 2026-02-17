@@ -89,6 +89,8 @@ Context: ${context}
 ${patternCtx ? `Weekly Patterns: ${patternCtx}` : ""}
 Create exactly 10 tasks as a JSON array. Each task must have:
 - id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
+- desc (string): 1-2 sentence actionable instruction explaining WHAT to do and HOW to approach it
+- tip (string): a short productivity or effectiveness tip specific to this task
 Schedule tasks ONLY between ${String(wakeH).padStart(2, "0")}:00-${String(sleepH).padStart(2, "0")}:00. ${profile?.goals?.includes("ielts") ? "Front-load IELTS before noon." : ""} Include health, work, and mindfulness tasks. Mix categories.
 Respond with ONLY the JSON array, no explanation.`;
 
@@ -108,7 +110,9 @@ Respond with ONLY the JSON array, no explanation.`;
                             xp: Math.max(10, Math.min(60, Number(t.xp) || 20)),
                             done: false,
                             calSync: Boolean(t.calSync),
-                            hp: Math.max(8, Math.min(50, Number(t.hp) || 15))
+                            hp: Math.max(8, Math.min(50, Number(t.hp) || 15)),
+                            desc: String(t.desc || ''),
+                            tip: String(t.tip || '')
                         }));
                     }
                 }

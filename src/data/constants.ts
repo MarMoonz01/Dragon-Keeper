@@ -7,6 +7,8 @@ export interface Task {
     done: boolean;
     calSync?: boolean;
     hp: number;
+    desc?: string;
+    tip?: string;
 }
 
 export interface Dragon {
