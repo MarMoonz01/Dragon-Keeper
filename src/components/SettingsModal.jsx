@@ -11,13 +11,16 @@ const STATUS_OPTIONS = [
     { id: "gap_year", label: "Gap Year / Unemployed" }
 ];
 
+const TARGET_BAND_OPTIONS = ["5.0", "5.5", "6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0"];
+
 export default function SettingsModal() {
     const { showSettings, setShowSettings: onClose, resetGame: onReset } = useSettings();
     const [provider, setProvider] = useState("claude");
     const [keys, setKeys] = useState({ claudeKey: "", openaiKey: "", geminiKey: "", supabaseUrl: "", supabaseKey: "" });
     const [goals, setGoals] = useState({ ieltsTarget: "7.5", studyHours: "3", targetSleep: "8", exerciseDays: "5" });
     const [initialSupabase, setInitialSupabase] = useState({ url: "", key: "" });
-    const [profile, setProfile] = useState({ name: "", age: "", status: "", wakeTime: "07:00", sleepTime: "23:00", freeSlots: "afternoon", currentBand: "", exerciseDays: "3" });
+    const [profile, setProfile] = useState({ name: "", age: "", status: "", wakeTime: "07:00", sleepTime: "23:00", freeSlots: "afternoon", currentBand: "", exerciseDays: "3", targetListening: "7.0", targetReading: "7.0", targetWriting: "6.5", targetSpeaking: "7.0" });
+    const [profileOpen, setProfileOpen] = useState(true);
 
     useEffect(() => {
         const s = load("nx-settings");
@@ -50,7 +53,11 @@ export default function SettingsModal() {
                 sleepTime: p.sleepTime || "23:00",
                 freeSlots: p.freeSlots || "afternoon",
                 currentBand: p.currentBand || "",
-                exerciseDays: p.exerciseDays ? String(p.exerciseDays) : "3"
+                exerciseDays: p.exerciseDays ? String(p.exerciseDays) : "3",
+                targetListening: p.targetListening || "7.0",
+                targetReading: p.targetReading || "7.0",
+                targetWriting: p.targetWriting || "6.5",
+                targetSpeaking: p.targetSpeaking || "7.0"
             });
         }
     }, []);
@@ -64,9 +71,17 @@ export default function SettingsModal() {
     if (!showSettings) return null;
 
     const handleSave = () => {
-        save("nx-settings", { provider, ...keys, ...goals });
+        // Calculate overall target from per-skill targets
+        const vals = [profile.targetListening, profile.targetReading, profile.targetWriting, profile.targetSpeaking].map(Number).filter(v => !isNaN(v) && v > 0);
+        const overallTarget = vals.length > 0 ? (Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 2) / 2).toFixed(1) : goals.ieltsTarget;
+
+        save("nx-settings", { provider, ...keys, ...goals, ieltsTarget: overallTarget });
         const existing = load("nx-profile") || {};
-        save("nx-profile", { ...existing, ...profile, age: +profile.age || existing.age, exerciseDays: +profile.exerciseDays || existing.exerciseDays });
+        save("nx-profile", {
+            ...existing, ...profile,
+            age: +profile.age || existing.age,
+            exerciseDays: +profile.exerciseDays || existing.exerciseDays
+        });
         try { localStorage.setItem("nx-ai-model", provider); } catch { } // Sync with SpeakingDojo
         window.dispatchEvent(new CustomEvent("nx-model-change", { detail: provider })); // Notify listeners
         const supabaseChanged = keys.supabaseUrl !== initialSupabase.url || keys.supabaseKey !== initialSupabase.key;
@@ -134,52 +149,103 @@ export default function SettingsModal() {
                     </div>
                 </div>
 
-                {/* Profile */}
+                {/* Collapsible Profile */}
                 <div className="fr">
-                    <label>Profile</label>
-                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>👤 Name</div>
-                            <input className="inp" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} placeholder="Your name" />
+                    <label
+                        onClick={() => setProfileOpen(p => !p)}
+                        style={{ cursor: "pointer", display: "flex", alignItems: "center", gap: 6, userSelect: "none" }}
+                    >
+                        <span style={{ fontSize: 10, transition: "transform .2s", transform: profileOpen ? "rotate(90deg)" : "rotate(0deg)", display: "inline-block" }}>▸</span>
+                        Profile
+                    </label>
+                    <div style={{
+                        maxHeight: profileOpen ? 600 : 0,
+                        overflow: "hidden",
+                        transition: "max-height .35s ease",
+                    }}>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, paddingTop: 4 }}>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>👤 Name</div>
+                                <input className="inp" value={profile.name} onChange={e => setProfile({ ...profile, name: e.target.value })} placeholder="Your name" />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🎂 Age</div>
+                                <input className="inp" type="number" min={10} max={99} value={profile.age} onChange={e => setProfile({ ...profile, age: e.target.value })} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>💼 Status</div>
+                                <select className="inp" value={profile.status} onChange={e => setProfile({ ...profile, status: e.target.value })}>
+                                    <option value="">Select...</option>
+                                    {STATUS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📊 Current Band</div>
+                                <select className="inp" value={profile.currentBand} onChange={e => setProfile({ ...profile, currentBand: e.target.value })}>
+                                    <option value="">Not tested</option>
+                                    {["4.0","4.5","5.0","5.5","6.0","6.5","7.0","7.5","8.0","8.5","9.0"].map(b => <option key={b} value={b}>{b}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>⏰ Wake Time</div>
+                                <input className="inp" type="time" value={profile.wakeTime} onChange={e => setProfile({ ...profile, wakeTime: e.target.value })} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🌙 Sleep Time</div>
+                                <input className="inp" type="time" value={profile.sleepTime} onChange={e => setProfile({ ...profile, sleepTime: e.target.value })} />
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📅 Free Slots</div>
+                                <select className="inp" value={profile.freeSlots} onChange={e => setProfile({ ...profile, freeSlots: e.target.value })}>
+                                    <option value="morning">Morning</option>
+                                    <option value="afternoon">Afternoon</option>
+                                    <option value="evening">Evening</option>
+                                    <option value="flexible">Flexible</option>
+                                </select>
+                            </div>
+                            <div>
+                                <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🏃 Exercise Days/Wk</div>
+                                <input className="inp" type="number" min={0} max={7} value={profile.exerciseDays} onChange={e => setProfile({ ...profile, exerciseDays: e.target.value })} />
+                            </div>
                         </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🎂 Age</div>
-                            <input className="inp" type="number" min={10} max={99} value={profile.age} onChange={e => setProfile({ ...profile, age: e.target.value })} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>💼 Status</div>
-                            <select className="inp" value={profile.status} onChange={e => setProfile({ ...profile, status: e.target.value })}>
-                                <option value="">Select...</option>
-                                {STATUS_OPTIONS.map(o => <option key={o.id} value={o.id}>{o.label}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📊 Current Band</div>
-                            <select className="inp" value={profile.currentBand} onChange={e => setProfile({ ...profile, currentBand: e.target.value })}>
-                                <option value="">Not tested</option>
-                                {["4.0","4.5","5.0","5.5","6.0","6.5","7.0","7.5","8.0","8.5","9.0"].map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>⏰ Wake Time</div>
-                            <input className="inp" type="time" value={profile.wakeTime} onChange={e => setProfile({ ...profile, wakeTime: e.target.value })} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🌙 Sleep Time</div>
-                            <input className="inp" type="time" value={profile.sleepTime} onChange={e => setProfile({ ...profile, sleepTime: e.target.value })} />
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📅 Free Slots</div>
-                            <select className="inp" value={profile.freeSlots} onChange={e => setProfile({ ...profile, freeSlots: e.target.value })}>
-                                <option value="morning">Morning</option>
-                                <option value="afternoon">Afternoon</option>
-                                <option value="evening">Evening</option>
-                                <option value="flexible">Flexible</option>
-                            </select>
-                        </div>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🏃 Exercise Days/Wk</div>
-                            <input className="inp" type="number" min={0} max={7} value={profile.exerciseDays} onChange={e => setProfile({ ...profile, exerciseDays: e.target.value })} />
+
+                        {/* Per-skill IELTS targets */}
+                        <div style={{ marginTop: 10, padding: "10px 12px", background: "var(--card2)", borderRadius: 10, border: "1px solid var(--bdr)" }}>
+                            <div style={{ fontSize: 10, color: "var(--t2)", fontWeight: 700, letterSpacing: ".5px", textTransform: "uppercase", marginBottom: 8 }}>
+                                IELTS Target Bands
+                            </div>
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+                                <div>
+                                    <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🎧 Listening</div>
+                                    <select className="inp" value={profile.targetListening} onChange={e => setProfile({ ...profile, targetListening: e.target.value })}>
+                                        {TARGET_BAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📖 Reading</div>
+                                    <select className="inp" value={profile.targetReading} onChange={e => setProfile({ ...profile, targetReading: e.target.value })}>
+                                        {TARGET_BAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>✍️ Writing</div>
+                                    <select className="inp" value={profile.targetWriting} onChange={e => setProfile({ ...profile, targetWriting: e.target.value })}>
+                                        {TARGET_BAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                                <div>
+                                    <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🎤 Speaking</div>
+                                    <select className="inp" value={profile.targetSpeaking} onChange={e => setProfile({ ...profile, targetSpeaking: e.target.value })}>
+                                        {TARGET_BAND_OPTIONS.map(b => <option key={b} value={b}>{b}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div style={{ marginTop: 6, fontSize: 11, color: "var(--teal)", fontWeight: 700, textAlign: "center" }}>
+                                Overall: {(() => {
+                                    const vals = [profile.targetListening, profile.targetReading, profile.targetWriting, profile.targetSpeaking].map(Number).filter(v => !isNaN(v) && v > 0);
+                                    return vals.length > 0 ? (Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 2) / 2).toFixed(1) : "—";
+                                })()}
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -188,12 +254,6 @@ export default function SettingsModal() {
                 <div className="fr">
                     <label>Goals & Targets</label>
                     <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
-                        <div>
-                            <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>🎯 IELTS Target</div>
-                            <select className="inp" value={goals.ieltsTarget} onChange={e => setGoals({ ...goals, ieltsTarget: e.target.value })}>
-                                {["6.0", "6.5", "7.0", "7.5", "8.0", "8.5", "9.0"].map(b => <option key={b} value={b}>{b}</option>)}
-                            </select>
-                        </div>
                         <div>
                             <div style={{ fontSize: 10, color: "var(--t3)", marginBottom: 3, fontWeight: 600 }}>📚 Study Hours/Day</div>
                             <input className="inp" type="number" min={1} max={12} value={goals.studyHours} onChange={e => setGoals({ ...goals, studyHours: e.target.value })} />

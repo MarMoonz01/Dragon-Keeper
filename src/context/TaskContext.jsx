@@ -2,7 +2,6 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { load, save, ai } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 import { loadProfile } from '../utils/supabaseSync';
-import { TASKS0 } from '../data/constants';
 import { useGame } from './GameContext';
 import { useSettings } from './SettingsContext';
 
@@ -28,7 +27,7 @@ export function TaskProvider({ children }) {
         if (supabase) {
             fetchDailyPlan().catch(e => console.error("Fetch plan failed:", e));
         } else {
-            setTasks(load("nx-tasks") || TASKS0);
+            setTasks(load("nx-tasks") || []);
         }
     }, []);
 
@@ -95,7 +94,7 @@ Respond with ONLY the JSON array, no explanation.`;
 
             const res = await ai([{ role: "user", content: prompt }], "You are NEXUS AI Life Secretary. Generate practical, balanced daily schedules in JSON format.");
 
-            let newTasks = TASKS0;
+            let newTasks = [];
             try {
                 const jsonMatch = res.match(/\[\s*\{[\s\S]*\}\s*\]/);
                 if (jsonMatch) {
@@ -124,8 +123,8 @@ Respond with ONLY the JSON array, no explanation.`;
             save("nx-tasks", newTasks);
         } catch (e) {
             console.error("Error generating plan:", e);
-            setTasks(TASKS0);
-            showToast("❌", "Plan Generation Failed", "Using default tasks. Check AI settings.");
+            setTasks([]);
+            showToast("❌", "Plan Generation Failed", "No tasks loaded. Check AI settings.");
         }
     };
 

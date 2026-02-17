@@ -1,3 +1,4 @@
+/* v2.1 — theme transitions, slide animations, light-mode consolidation */
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Syne:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap');
 
 * {
@@ -46,13 +47,13 @@
 
 /* ===== LIGHT MODE ===== */
 body.light-mode {
-  --ink: #fafafa;
-  --surf: #f3f4f6;
+  --ink: #f8fafc;
+  --surf: #ffffff;
   --card: #ffffff;
-  --card2: #f9fafb;
-  --t1: #111827;
-  --t2: #4b5563;
-  --t3: #9ca3af;
+  --card2: #f1f5f9;
+  --t1: #0f172a;
+  --t2: #64748b;
+  --t3: #94a3b8;
   --bdr: rgba(0, 0, 0, 0.08);
   --glow: 0 0 40px rgba(252, 203, 88, 0.15);
   --coffee: #a0785c;
@@ -60,6 +61,13 @@ body.light-mode {
   --map-bg1: #e8e8f0;
   --map-bg2: #d8d8e5;
   --bg2: #f3f4f6;
+  --gold: #b45309;
+  --gold2: #d97706;
+  --teal: #0f766e;
+  --rose: #be123c;
+  --violet: #7c3aed;
+  --sky: #0369a1;
+  --green: #047857;
 }
 
 body.light-mode ::-webkit-scrollbar-thumb {
@@ -77,7 +85,14 @@ body {
   background: var(--ink);
   color: var(--t1);
   font-family: 'Syne', sans-serif;
-  overflow: hidden
+  overflow: hidden;
+  transition: background-color 0.3s ease, color 0.3s ease
+}
+
+*,
+*::before,
+*::after {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease
 }
 
 ::-webkit-scrollbar {
@@ -2535,7 +2550,7 @@ select.inp {
   width: 0;
   border-radius: 4px;
   background: linear-gradient(90deg, var(--teal), var(--violet));
-  transition: width .4s ease
+  transition: width .4s ease !important
 }
 
 .ob-progress-fill.active {
@@ -2660,7 +2675,41 @@ select.inp {
 /* Content area */
 .ob-content {
   min-height: 280px;
-  margin-bottom: 20px
+  margin-bottom: 20px;
+  overflow: hidden
+}
+
+/* Slide animations for step transitions */
+@keyframes slideInRight {
+  from {
+    transform: translateX(60px);
+    opacity: 0
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-60px);
+    opacity: 0
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1
+  }
+}
+
+.ob-slide-right {
+  animation: slideInRight .35s ease-out
+}
+
+.ob-slide-left {
+  animation: slideInLeft .35s ease-out
 }
 
 /* Navigation */
@@ -2719,28 +2768,7 @@ select.inp {
   }
 }
 
-/* Light Mode Overrides */
-body.light-mode {
-  --ink: #f8fafc;
-  --surf: #ffffff;
-  --card: #ffffff;
-  --card2: #f1f5f9;
-  --t1: #0f172a;
-  --t2: #64748b;
-  --t3: #94a3b8;
-  --bdr: rgba(0, 0, 0, 0.08);
-  --glow: 0 0 40px rgba(252, 203, 88, 0.15);
-}
-
-body.light-mode {
-  --gold: #b45309;
-  --gold2: #d97706;
-  --teal: #0f766e;
-  --rose: #be123c;
-  --violet: #7c3aed;
-  --sky: #0369a1;
-  --green: #047857;
-}
+/* Light Mode Overrides — consolidated into body.light-mode at top */
 
 /* Coffee Focus Animation */
 .coffee-container {

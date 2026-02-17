@@ -170,10 +170,10 @@ export const VOCAB = [
 ];
 
 export const ISKILLS = [
-    { name: "Listening", ic: "🎧", sc: 7.0, color: "var(--teal)", hist: [6.5, 6.5, 7.0, 7.0] },
-    { name: "Reading", ic: "📖", sc: 6.5, color: "var(--violet)", hist: [6.0, 6.5, 6.0, 6.5] },
-    { name: "Writing", ic: "✍️", sc: 6.0, color: "var(--gold)", hist: [5.5, 6.0, 5.5, 6.0] },
-    { name: "Speaking", ic: "🎤", sc: 6.5, color: "var(--rose)", hist: [6.0, 6.0, 6.5, 6.5] },
+    { name: "Listening", ic: "🎧", color: "var(--teal)" },
+    { name: "Reading", ic: "📖", color: "var(--violet)" },
+    { name: "Writing", ic: "✍️", color: "var(--gold)" },
+    { name: "Speaking", ic: "🎤", color: "var(--rose)" },
 ];
 
 export const TOPICS = [
