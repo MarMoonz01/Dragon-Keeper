@@ -42,7 +42,7 @@ const API_KEYS = {
 const MODELS = {
     claude: "claude-sonnet-4-5-20250929",
     openai: "gpt-4o",
-    gemini: "gemini-2.0-flash",
+    gemini: "gemini-3-flash-preview",
 };
 
 const MAX_RETRIES = 2;

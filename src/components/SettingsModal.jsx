@@ -68,7 +68,7 @@ export default function SettingsModal() {
                     <select className="inp" value={provider} onChange={e => setProvider(e.target.value)}>
                         <option value="claude">Anthropic (Claude Sonnet 4.5)</option>
                         <option value="openai">OpenAI (GPT-4o)</option>
-                        <option value="gemini">Google (Gemini 2.0 Flash)</option>
+                        <option value="gemini">Google (Gemini 3 Flash)</option>
                     </select>
                 </div>
 

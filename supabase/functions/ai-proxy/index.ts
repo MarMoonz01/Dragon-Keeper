@@ -33,8 +33,8 @@ serve(async (req) => {
             systemInstruction = { parts: [{ text: system_prompt }] };
         }
 
-        // 4. Call Gemini API (1.5-flash for speed, 1.5-pro for intelligence)
-        const model = "gemini-1.5-flash";
+        // 4. Call Gemini API
+        const model = "gemini-3-flash-preview";
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
         const response = await fetch(url, {
