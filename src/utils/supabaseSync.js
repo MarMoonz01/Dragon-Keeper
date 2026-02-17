@@ -71,6 +71,11 @@ const PROFILE_KEY_MAP = {
     freeSlots: 'free_slots',
     currentBand: 'current_band',
     exerciseDays: 'exercise_days',
+    createdAt: 'created_at',
+    targetListening: 'target_listening',
+    targetReading: 'target_reading',
+    targetWriting: 'target_writing',
+    targetSpeaking: 'target_speaking',
 };
 
 function profileToDb(profile) {
