@@ -270,7 +270,8 @@ Respond in this JSON format:
         editTask,
         deleteTask,
         endDay,
-        onGcalPush
+        onGcalPush,
+        regenerateSchedule: generateDailyPlan
     }), [tasks, dailyPlan, analyzing, showCheckIn, gcalPushing, toast, completeTask, showToast]);
 
     return (

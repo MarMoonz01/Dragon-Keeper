@@ -6,7 +6,8 @@ import EmptyState from '../EmptyState';
 import { useTasks } from '../../context/TaskContext';
 
 export default function ScheduleCard({ onAddClick, pct }) {
-    const { tasks, completeTask: onComplete, editTask: onEdit, deleteTask: onDelete } = useTasks();
+    const { tasks, completeTask: onComplete, editTask: onEdit, deleteTask: onDelete, regenerateSchedule } = useTasks();
+    const [regenerating, setRegenerating] = useState(false);
     const navigate = useNavigate();
 
     const [sortBy, setSortBy] = useState("time");
@@ -60,6 +61,12 @@ export default function ScheduleCard({ onAddClick, pct }) {
                     <Ring size={42} stroke={4} pct={pct} color="var(--teal)">
                         <span style={{ fontSize: 9, fontFamily: "'JetBrains Mono',monospace", fontWeight: 700 }}>{pct}%</span>
                     </Ring>
+                    <button
+                        className="btn btn-gh btn-sm"
+                        disabled={regenerating}
+                        onClick={async () => { setRegenerating(true); try { await regenerateSchedule(); } finally { setRegenerating(false); } }}
+                        title="Regenerate schedule with AI"
+                    >{regenerating ? "..." : "🔄"}</button>
                     <button className="btn btn-gh btn-sm" onClick={onAddClick}>+ Task</button>
                 </div>
             </div>
