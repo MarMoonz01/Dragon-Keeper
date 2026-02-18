@@ -168,6 +168,16 @@ Respond with ONLY the JSON array, no explanation.`;
                                     timeBreakdown: String(t.details.timeBreakdown || ''),
                                     commonMistakes: String(t.details.commonMistakes || ''),
                                 };
+                            } else if (task.desc) {
+                                // Fallback: build details from desc/tip when AI omits details object
+                                task.details = {
+                                    objective: task.desc,
+                                    materials: '',
+                                    steps: task.desc.split(/[.;]\s*/).filter(s => s.trim().length > 0),
+                                    strategies: task.tip ? [task.tip] : [],
+                                    timeBreakdown: '',
+                                    commonMistakes: '',
+                                };
                             }
                             // Add skill field for IELTS tasks
                             if (task.cat === 'ielts' && t.skill) {

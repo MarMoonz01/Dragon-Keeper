@@ -18,7 +18,6 @@ import ChallengesCard from '../components/ChallengesCard';
 // Extracted Components
 import StatsRow from '../components/dashboard/StatsRow';
 import WeeklyChart from '../components/dashboard/WeeklyChart';
-import AIScheduler from '../components/dashboard/AIScheduler';
 import ScheduleCard from '../components/dashboard/ScheduleCard';
 
 export default function Dashboard() {
@@ -101,7 +100,6 @@ export default function Dashboard() {
 
                     <WeeklyChart />
 
-                    <AIScheduler />
                 </div>
 
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
