@@ -11,6 +11,7 @@ import FlashcardDeck from '../components/ielts/FlashcardDeck';
 import ReadingLab from '../components/ielts/ReadingLab';
 import ListeningLab from '../components/ielts/ListeningLab';
 import DailyLesson from '../components/ielts/DailyLesson';
+import IELTSSchedule from '../components/ielts/IELTSSchedule';
 
 export default function IELTSPage() {
     const {
@@ -25,7 +26,7 @@ export default function IELTSPage() {
         addScore
     } = useIELTS();
 
-    const [tab, setTab] = useState("daily");
+    const [tab, setTab] = useState("schedule");
     const [showLogModal, setShowLogModal] = useState(false);
     const [newLog, setNewLog] = useState({ listening: "", reading: "", writing: "", speaking: "", note: "" });
     const [errorMsg, setErrorMsg] = useState("");
@@ -101,11 +102,12 @@ export default function IELTSPage() {
             </div>
             {/* Tabs */}
             <div className="tabs">
-                {["daily", "tracker", "reading", "listening", "writing", "speaking", "notebook", "flashcards"].map(t => (
+                {["schedule", "daily", "tracker", "reading", "listening", "writing", "speaking", "notebook", "flashcards"].map(t => (
                     <button key={t} className={"tab" + (tab === t ? " on" : "")} onClick={() => setTab(t)} style={{ textTransform: "capitalize" }}>{t}</button>
                 ))}
             </div>
 
+            {tab === "schedule" && <IELTSSchedule />}
             {tab === "daily" && <DailyLesson />}
             {tab === "tracker" && <ScoreTracker latestScore={latestScore} realScores={realScores} practiceLogs={practiceLogs} togglePracticeLog={togglePracticeLog} ieltsTarget={ieltsTarget} supabase={supabase} />}
             {tab === "reading" && <ReadingLab />}

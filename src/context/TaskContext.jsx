@@ -81,11 +81,37 @@ export function TaskProvider({ children }) {
                 ? `Yesterday: ${history.summary || 'No summary'}. Mood: ${history.mood || 'Unknown'}. Score: ${history.productivity_score || 0}%. Completed: ${(history.completed_tasks || []).map(t => t.name).join(', ') || 'none'}.`
                 : 'First day — no history yet.';
 
+            // 4. Fetch IELTS performance data
+            let ieltsCtx = "";
+            if (supabase) {
+                try {
+                    const { data: scoreData } = await supabase.from('scores').select('*').order('created_at', { ascending: false }).limit(1).single();
+                    if (scoreData) {
+                        const target = profile?.ieltsTarget || 7;
+                        const skills = ['listening', 'reading', 'writing', 'speaking'];
+                        const gaps = skills.map(s => ({ skill: s, gap: target - (scoreData[s] || 0) })).sort((a, b) => b.gap - a.gap);
+                        const weakest = gaps[0]?.gap > 0 ? gaps[0].skill : null;
+                        ieltsCtx = `IELTS Performance: Listening ${scoreData.listening}, Reading ${scoreData.reading}, Writing ${scoreData.writing}, Speaking ${scoreData.speaking} (Overall ${scoreData.overall}). Target: ${target}.`;
+                        if (weakest) ieltsCtx += ` Weakest skill: ${weakest}. Prioritize ${weakest} tasks.`;
+
+                        // Writing sub-scores
+                        try {
+                            const { data: wData } = await supabase.from('writing_history').select('band,ta,cc,lr,gra').order('created_at', { ascending: false }).limit(3);
+                            if (wData && wData.length > 0) {
+                                const avg = (k) => (wData.reduce((s, d) => s + (d[k] || 0), 0) / wData.length).toFixed(1);
+                                ieltsCtx += ` Writing sub-scores: TA ${avg('ta')}, CC ${avg('cc')}, LR ${avg('lr')}, GRA ${avg('gra')}.`;
+                            }
+                        } catch { /* no writing history */ }
+                    }
+                } catch { /* no scores yet */ }
+            }
+
             const wakeH = profile?.wakeTime ? parseInt(profile.wakeTime.split(':')[0]) : 7;
             const sleepH = profile?.sleepTime ? parseInt(profile.sleepTime.split(':')[0]) : 23;
 
             const prompt = `Generate today's daily plan. ${profileCtx}
 Context: ${context}
+${ieltsCtx ? `IELTS: ${ieltsCtx}` : ""}
 ${patternCtx ? `Weekly Patterns: ${patternCtx}` : ""}
 Create exactly 10 tasks as a JSON array. Each task must have:
 - id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)

@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { load, save } from '../utils/helpers';
 import { supabase } from '../utils/supabaseClient';
 
@@ -73,6 +73,17 @@ export function IELTSProvider({ children }) {
         fetchPracticeLogs();
     };
 
+    const getWeakestSkills = useCallback(() => {
+        if (!realScores || realScores.length === 0) return [];
+        const latest = realScores[0];
+        const target = parseFloat(ieltsTarget) || 7;
+        const skills = ['listening', 'reading', 'writing', 'speaking'];
+        return skills
+            .map(s => ({ skill: s, current: latest[s] || 0, gap: target - (latest[s] || 0) }))
+            .filter(s => s.gap > 0)
+            .sort((a, b) => b.gap - a.gap);
+    }, [realScores, ieltsTarget]);
+
     const addScore = async (scoreData) => {
         if (!supabase) return { error: { message: "Supabase not connected" } };
         const { error } = await supabase.from('scores').insert([scoreData]);
@@ -92,8 +103,9 @@ export function IELTSProvider({ children }) {
         togglePracticeLog,
         fetchNotebook,
         fetchScores,
-        fetchPracticeLogs
-    }), [ieltsTarget, scores, realScores, notebook, practiceLogs]);
+        fetchPracticeLogs,
+        getWeakestSkills
+    }), [ieltsTarget, scores, realScores, notebook, practiceLogs, getWeakestSkills]);
 
     return (
         <IELTSContext.Provider value={value}>
