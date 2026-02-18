@@ -1,10 +1,8 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import Loader from '../Loader';
 import TaskDetailModal from './TaskDetailModal';
-import { ai } from '../../utils/helpers';
 import { useIELTS } from '../../context/IELTSContext';
 import { useGame } from '../../context/GameContext';
-import { supabase } from '../../utils/supabaseClient';
 import { useTasks } from '../../context/TaskContext';
 
 const EXAM_DATE = new Date('2025-03-02');
@@ -21,25 +19,15 @@ const SKILL_ICONS = {
 export default function IELTSSchedule() {
     const { realScores, ieltsTarget } = useIELTS();
     const { addXP } = useGame();
-    const { tasks: dashTasks, setTasks: setDashTasks } = useTasks();
+    const { tasks, completeTask, regenerateSchedule, analyzing } = useTasks();
 
-    const todayStr = new Date().toISOString().split("T")[0];
-    const cacheKey = "nx-ielts-schedule-" + todayStr;
-
-    const [blocks, setBlocks] = useState([]);
-    const [loading, setLoading] = useState(false);
     const [selectedTask, setSelectedTask] = useState(null);
 
-    // Load from cache on mount
-    useEffect(() => {
-        const cached = localStorage.getItem(cacheKey);
-        if (cached) {
-            try {
-                const parsed = JSON.parse(cached);
-                if (Array.isArray(parsed) && parsed.length > 0) { setBlocks(parsed); return; }
-            } catch { /* regenerate */ }
-        }
-    }, []);
+    // Filter unified tasks to IELTS only
+    const blocks = useMemo(() =>
+        tasks.filter(t => t.cat === "ielts").sort((a, b) => (a.time || "").localeCompare(b.time || "")),
+        [tasks]
+    );
 
     // Exam countdown
     const daysUntilExam = useMemo(() => {
@@ -70,136 +58,11 @@ export default function IELTSSchedule() {
     const totalCount = blocks.length;
     const pct = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
 
-    const generateSchedule = async () => {
-        setLoading(true);
-        try {
-            // Fetch writing sub-scores if available
-            let writingCtx = "";
-            if (supabase) {
-                try {
-                    const { data } = await supabase.from('writing_history').select('band,ta,cc,lr,gra').order('created_at', { ascending: false }).limit(3);
-                    if (data && data.length > 0) {
-                        const avg = (key) => (data.reduce((sum, d) => sum + (d[key] || 0), 0) / data.length).toFixed(1);
-                        writingCtx = `Writing sub-scores (avg of last ${data.length}): TA ${avg('ta')}, CC ${avg('cc')}, LR ${avg('lr')}, GRA ${avg('gra')}.`;
-                    }
-                } catch { /* no writing history */ }
-            }
-
-            const scoreCtx = latestScore
-                ? `Current IELTS scores — Listening: ${latestScore.listening}, Reading: ${latestScore.reading}, Writing: ${latestScore.writing}, Speaking: ${latestScore.speaking}, Overall: ${latestScore.overall}. ${writingCtx}`
-                : "No IELTS scores recorded yet.";
-
-            const gapCtx = skillGaps.length > 0
-                ? `Skill gaps (target ${ieltsTarget}): ${skillGaps.map(g => `${g.skill}: ${g.gap > 0 ? '+' + g.gap.toFixed(1) + ' needed' : 'on target'}`).join(', ')}. Weakest: ${weakestSkill || 'unknown'}.`
-                : "";
-
-            const prompt = `Generate an IELTS-focused daily study schedule. ${daysUntilExam > 0 ? `Exam is in ${daysUntilExam} days (March 2).` : "Exam date has passed, focus on general practice."}
-
-${scoreCtx}
-${gapCtx}
-Target band: ${ieltsTarget}.
-
-Create exactly 8 IELTS study blocks as a JSON array. Skills with larger gaps should get MORE time blocks. Each block must have:
-- id (number 1-8)
-- name (string, specific task e.g. "Cambridge 18 Test 2 Listening Section 3-4")
-- time (HH:MM, spread between 08:00-21:00)
-- skill (one of: listening/reading/writing/speaking/vocabulary/review)
-- xp (15-50)
-- done (false)
-- details: {
-    objective (1-2 sentences of what to achieve),
-    materials (specific books/websites/test numbers),
-    steps (array of 3-6 specific step strings),
-    strategies (array of 2-4 exam strategy tips),
-    timeBreakdown (string like "5 min warm-up → 20 min practice → 5 min review"),
-    commonMistakes (string of what to avoid)
-  }
-
-Focus heavily on ${weakestSkill || 'all skills equally'}. Include vocabulary and review blocks. Be extremely specific with materials (Cambridge test numbers, exact websites, page numbers).
-Respond with ONLY the JSON array.`;
-
-            const res = await ai(
-                [{ role: "user", content: prompt }],
-                "You are an expert IELTS tutor creating a detailed daily study plan. Return valid JSON only."
-            );
-
-            let newBlocks = [];
-            try {
-                const jsonMatch = res.match(/\[\s*\{[\s\S]*\}\s*\]/);
-                if (jsonMatch) {
-                    const parsed = JSON.parse(jsonMatch[0]);
-                    if (Array.isArray(parsed) && parsed.length > 0) {
-                        newBlocks = parsed.map((b, i) => ({
-                            id: b.id || i + 1,
-                            name: String(b.name || ''),
-                            time: String(b.time || '08:00'),
-                            skill: ['listening', 'reading', 'writing', 'speaking', 'vocabulary', 'review'].includes(b.skill) ? b.skill : 'review',
-                            xp: Math.max(15, Math.min(50, Number(b.xp) || 25)),
-                            done: false,
-                            cat: "ielts",
-                            details: {
-                                objective: String(b.details?.objective || ''),
-                                materials: String(b.details?.materials || ''),
-                                steps: Array.isArray(b.details?.steps) ? b.details.steps.map(String) : [],
-                                strategies: Array.isArray(b.details?.strategies) ? b.details.strategies.map(String) : [],
-                                timeBreakdown: String(b.details?.timeBreakdown || ''),
-                                commonMistakes: String(b.details?.commonMistakes || ''),
-                            },
-                        }));
-                    }
-                }
-            } catch (parseErr) {
-                console.warn("IELTS schedule parse failed:", parseErr);
-            }
-
-            if (newBlocks.length > 0) {
-                setBlocks(newBlocks);
-                localStorage.setItem(cacheKey, JSON.stringify(newBlocks));
-
-                // Also sync to dashboard tasks
-                syncToDashboard(newBlocks);
-            }
-        } catch (e) {
-            console.error("IELTS schedule generation failed:", e);
-        }
-        setLoading(false);
+    const handleComplete = (id, xp) => {
+        completeTask(id, xp);
     };
 
-    // Sync IELTS blocks into the dashboard task list
-    const syncToDashboard = (ieltsBlocks) => {
-        const ieltsTaskIds = ieltsBlocks.map(b => "ielts-sched-" + b.id);
-        // Remove old ielts-sched tasks, add new ones
-        const nonIelts = dashTasks.filter(t => !String(t.id).startsWith("ielts-sched-"));
-        const mappedTasks = ieltsBlocks.map(b => ({
-            id: "ielts-sched-" + b.id,
-            name: b.name,
-            time: b.time,
-            cat: "ielts",
-            xp: b.xp,
-            done: b.done,
-            calSync: false,
-            hp: 20,
-            desc: b.details?.objective || '',
-            tip: b.details?.strategies?.[0] || '',
-            skill: b.skill,
-            details: b.details,
-        }));
-        setDashTasks([...nonIelts, ...mappedTasks]);
-    };
-
-    const completeBlock = (id, xp) => {
-        const updated = blocks.map(b => b.id === id ? { ...b, done: true } : b);
-        setBlocks(updated);
-        localStorage.setItem(cacheKey, JSON.stringify(updated));
-        addXP(xp);
-
-        // Also update in dashboard
-        setDashTasks(prev =>
-            prev.map(t => t.id === "ielts-sched-" + id ? { ...t, done: true } : t)
-        );
-    };
-
-    if (loading) return <div style={{ padding: 40, textAlign: "center" }}><Loader text="Generating IELTS study plan..." /></div>;
+    if (analyzing) return <div style={{ padding: 40, textAlign: "center" }}><Loader text="Generating schedule..." /></div>;
 
     if (blocks.length === 0) {
         return (
@@ -214,13 +77,13 @@ Respond with ONLY the JSON array.`;
                 )}
                 <div className="card" style={{ textAlign: "center", padding: 30 }}>
                     <div style={{ fontSize: 32, marginBottom: 10 }}>📚</div>
-                    <div style={{ fontSize: 13, color: "var(--t2)", marginBottom: 6 }}>No IELTS schedule for today yet.</div>
+                    <div style={{ fontSize: 13, color: "var(--t2)", marginBottom: 6 }}>No IELTS tasks in today's schedule yet.</div>
                     {weakestSkill && (
                         <div style={{ fontSize: 11, color: "var(--rose)", marginBottom: 14 }}>
                             Weakest skill detected: <strong style={{ textTransform: "capitalize" }}>{weakestSkill}</strong> — schedule will prioritize it.
                         </div>
                     )}
-                    <button className="btn btn-g" onClick={generateSchedule}>Generate Today's Plan</button>
+                    <button className="btn btn-g" onClick={regenerateSchedule}>Generate Today's Plan</button>
                 </div>
             </div>
         );
@@ -257,7 +120,7 @@ Respond with ONLY the JSON array.`;
                     <div style={{ fontSize: 13, fontWeight: 700 }}>Today's IELTS Schedule</div>
                     <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
                         <span style={{ fontSize: 12, color: pct === 100 ? "var(--teal)" : "var(--t2)" }}>{completedCount}/{totalCount}</span>
-                        <button className="btn btn-gh btn-sm" onClick={generateSchedule} title="Regenerate schedule">🔄</button>
+                        <button className="btn btn-gh btn-sm" onClick={regenerateSchedule} title="Regenerate schedule">🔄</button>
                     </div>
                 </div>
                 <div style={{ height: 6, background: "rgba(255,255,255,0.08)", borderRadius: 3, overflow: "hidden" }}>
@@ -268,7 +131,7 @@ Respond with ONLY the JSON array.`;
 
             {/* Study blocks */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {blocks.sort((a, b) => (a.time || "").localeCompare(b.time || "")).map(block => {
+                {blocks.map(block => {
                     const color = SKILL_COLORS[block.skill] || "var(--teal)";
                     const icon = SKILL_ICONS[block.skill] || "📋";
                     return (
@@ -280,7 +143,7 @@ Respond with ONLY the JSON array.`;
                         >
                             {/* Check */}
                             <div
-                                onClick={e => { e.stopPropagation(); if (!block.done) completeBlock(block.id, block.xp); }}
+                                onClick={e => { e.stopPropagation(); if (!block.done) handleComplete(block.id, block.xp); }}
                                 style={{
                                     width: 20, height: 20, borderRadius: 6,
                                     border: `2px solid ${block.done ? "var(--teal)" : "var(--bdr)"}`,
@@ -319,7 +182,7 @@ Respond with ONLY the JSON array.`;
                 <TaskDetailModal
                     task={selectedTask}
                     onClose={() => setSelectedTask(null)}
-                    onComplete={completeBlock}
+                    onComplete={handleComplete}
                 />
             )}
         </div>

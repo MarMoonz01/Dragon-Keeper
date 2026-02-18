@@ -115,8 +115,25 @@ ${ieltsCtx ? `IELTS: ${ieltsCtx}` : ""}
 ${patternCtx ? `Weekly Patterns: ${patternCtx}` : ""}
 Create exactly 10 tasks as a JSON array. Each task must have:
 - id (number 1-10), name (string), time (HH:MM between ${String(wakeH).padStart(2, "0")}:00 and ${String(sleepH - 1).padStart(2, "0")}:30), cat (one of: health/work/ielts/mind/social), xp (10-60), done (false), calSync (boolean), hp (8-50)
-- desc (string): 2-3 sentences of SPECIFIC, practical, real-life detail. Not vague — tell the user exactly what to do step by step. Examples: for morning routine "Wash your face with cold water to wake up, stretch for 5 minutes, then drink a glass of warm water with lemon"; for IELTS listening "Do Cambridge 18 Test 2 Section 3-4, focus on note completion questions, replay tricky parts twice"; for lunch "Have a protein-rich meal like grilled salmon with rice and vegetables, grab a coffee to recharge for the afternoon"; for reading "Read a passage about climate change, practice T/F/NG questions, time yourself to 20 minutes max"
-- tip (string): a practical life hack or study trick for this specific task, e.g. "Use the 1.25x speed trick on listening audio to train your ear" or "Eat away from your desk to give your brain a real break"
+- desc (string): 2-3 sentences of SPECIFIC, practical, real-life detail
+- tip (string): a practical life hack or study trick for this specific task
+- skill (string, ONLY for ielts tasks): one of listening/reading/writing/speaking/vocabulary/review
+- details (object, REQUIRED for ALL tasks): {
+    "objective": "1-2 sentences of what to achieve",
+    "materials": "specific resources needed (books, apps, equipment, ingredients)",
+    "steps": ["step 1", "step 2", "step 3"] (3-6 specific actionable steps),
+    "strategies": ["tip 1", "tip 2"] (2-4 strategies or pro tips),
+    "timeBreakdown": "e.g. 5 min warm-up → 20 min practice → 5 min review",
+    "commonMistakes": "what to avoid or watch out for"
+  }
+
+Examples of details per category:
+- health: objective "Build core strength and improve flexibility", steps ["5 min dynamic stretching", "20 min HIIT circuit: burpees, squats, lunges", "5 min cool-down yoga"], strategies ["Keep heart rate 130-150 BPM", "Breathe through nose"]
+- work: objective "Clear blocking PRs and unblock team", steps ["Open IDE and review 3 pending PRs", "Address reviewer comments on auth PR", "Deploy staging build"], strategies ["Use Pomodoro for deep focus", "Batch similar tasks"]
+- ielts: objective "Improve listening accuracy on Section 3-4", steps ["Do Cambridge 18 Test 2 Section 3-4", "Check answers and analyze mistakes", "Re-listen at 1.25x speed"], skill "listening"
+- mind: objective "Reduce stress and improve focus", steps ["Find a quiet spot", "10 min guided breathing", "5 min journaling"], strategies ["Use box breathing: 4-4-4-4"]
+- social: objective "Maintain relationships and recharge socially", steps ["Message 2 friends you haven't spoken to", "Plan a weekend meetup", "Share something positive"]
+
 Schedule tasks ONLY between ${String(wakeH).padStart(2, "0")}:00-${String(sleepH).padStart(2, "0")}:00. ${profile?.goals?.includes("ielts") ? "Front-load IELTS before noon." : ""} Include health, work, and mindfulness tasks. Mix categories.
 Respond with ONLY the JSON array, no explanation.`;
 
@@ -128,18 +145,37 @@ Respond with ONLY the JSON array, no explanation.`;
                 if (jsonMatch) {
                     const parsed = JSON.parse(jsonMatch[0]);
                     if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].name && parsed[0].cat) {
-                        newTasks = parsed.map((t, i) => ({
-                            id: t.id || i + 1,
-                            name: String(t.name || ''),
-                            time: String(t.time || '08:00'),
-                            cat: ['health', 'work', 'ielts', 'mind', 'social'].includes(t.cat) ? t.cat : 'work',
-                            xp: Math.max(10, Math.min(60, Number(t.xp) || 20)),
-                            done: false,
-                            calSync: Boolean(t.calSync),
-                            hp: Math.max(8, Math.min(50, Number(t.hp) || 15)),
-                            desc: String(t.desc || ''),
-                            tip: String(t.tip || '')
-                        }));
+                        newTasks = parsed.map((t, i) => {
+                            const task = {
+                                id: t.id || i + 1,
+                                name: String(t.name || ''),
+                                time: String(t.time || '08:00'),
+                                cat: ['health', 'work', 'ielts', 'mind', 'social'].includes(t.cat) ? t.cat : 'work',
+                                xp: Math.max(10, Math.min(60, Number(t.xp) || 20)),
+                                done: false,
+                                calSync: Boolean(t.calSync),
+                                hp: Math.max(8, Math.min(50, Number(t.hp) || 15)),
+                                desc: String(t.desc || ''),
+                                tip: String(t.tip || ''),
+                            };
+                            // Parse rich details for all tasks
+                            if (t.details && typeof t.details === 'object') {
+                                task.details = {
+                                    objective: String(t.details.objective || ''),
+                                    materials: String(t.details.materials || ''),
+                                    steps: Array.isArray(t.details.steps) ? t.details.steps.map(String) : [],
+                                    strategies: Array.isArray(t.details.strategies) ? t.details.strategies.map(String) : [],
+                                    timeBreakdown: String(t.details.timeBreakdown || ''),
+                                    commonMistakes: String(t.details.commonMistakes || ''),
+                                };
+                            }
+                            // Add skill field for IELTS tasks
+                            if (task.cat === 'ielts' && t.skill) {
+                                const validSkills = ['listening', 'reading', 'writing', 'speaking', 'vocabulary', 'review'];
+                                task.skill = validSkills.includes(t.skill) ? t.skill : 'review';
+                            }
+                            return task;
+                        });
                     }
                 }
             } catch (parseErr) {

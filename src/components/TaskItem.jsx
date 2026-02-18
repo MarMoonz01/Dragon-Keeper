@@ -7,7 +7,7 @@ const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, ca
     const [expanded, setExpanded] = React.useState(false);
     const [showDetailModal, setShowDetailModal] = React.useState(false);
     const hasDetails = !!(t.desc || t.tip);
-    const hasIeltsDetails = t.cat === "ielts" && t.details && typeof t.details === "object" && t.details.objective;
+    const hasRichDetails = t.details && typeof t.details === "object" && t.details.objective;
 
     const handleComplete = (e) => {
         e.stopPropagation();
@@ -70,17 +70,17 @@ const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, ca
                     <div style={{ flex: 1 }}>
                         <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                             <div className="tn" onClick={() => !t.done && startEdit(t)} style={{ cursor: !t.done ? "pointer" : "default" }}>{t.name}</div>
-                            {(hasDetails || hasIeltsDetails) && (
+                            {(hasDetails || hasRichDetails) && (
                                 <button
                                     onClick={(e) => {
                                         e.stopPropagation();
-                                        if (hasIeltsDetails) setShowDetailModal(true);
+                                        if (hasRichDetails) setShowDetailModal(true);
                                         else setExpanded(!expanded);
                                     }}
-                                    style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 10, color: hasIeltsDetails ? "var(--violet)" : "var(--t3)", padding: "0 2px", transition: "transform .2s", transform: expanded ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}
-                                    title={hasIeltsDetails ? "View study guide" : (expanded ? "Hide details" : "Show details")}
+                                    style={{ background: "transparent", border: "none", cursor: "pointer", fontSize: 10, color: hasRichDetails ? "var(--violet)" : "var(--t3)", padding: "0 2px", transition: "transform .2s", transform: expanded ? "rotate(90deg)" : "rotate(0deg)", flexShrink: 0 }}
+                                    title={hasRichDetails ? "View task guide" : (expanded ? "Hide details" : "Show details")}
                                     aria-label="Toggle task details"
-                                >{hasIeltsDetails ? "📋" : "▸"}</button>
+                                >{hasRichDetails ? "📋" : "▸"}</button>
                             )}
                         </div>
                         <div style={{ display: "flex", alignItems: "center", gap: 7, marginTop: 3 }}>
@@ -121,7 +121,7 @@ const TaskItem = React.memo(({ t, editingId, editForm, setEditForm, saveEdit, ca
                     </div>
                 </div>
             )}
-            {showDetailModal && hasIeltsDetails && (
+            {showDetailModal && hasRichDetails && (
                 <TaskDetailModal
                     task={t}
                     onClose={() => setShowDetailModal(false)}

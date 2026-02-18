@@ -18,11 +18,31 @@ const SKILL_ICONS = {
     review: "🔄",
 };
 
+const CAT_COLORS = {
+    health: "var(--teal)",
+    work: "var(--violet)",
+    ielts: "var(--gold)",
+    mind: "#a78bfa",
+    social: "var(--rose)",
+};
+
+const CAT_ICONS = {
+    health: "🏃",
+    work: "💼",
+    ielts: "📚",
+    mind: "🧘",
+    social: "👥",
+};
+
 export default function TaskDetailModal({ task, onClose, onComplete }) {
     if (!task) return null;
     const details = task.details || {};
-    const color = SKILL_COLORS[task.skill] || "var(--teal)";
-    const icon = SKILL_ICONS[task.skill] || "📋";
+
+    // Use skill-based color/icon for IELTS, cat-based for everything else
+    const isIelts = task.cat === "ielts" && task.skill;
+    const color = isIelts ? (SKILL_COLORS[task.skill] || CAT_COLORS[task.cat]) : (CAT_COLORS[task.cat] || "var(--teal)");
+    const icon = isIelts ? (SKILL_ICONS[task.skill] || CAT_ICONS[task.cat]) : (CAT_ICONS[task.cat] || "📋");
+    const badgeLabel = isIelts ? task.skill : task.cat;
 
     return (
         <div className="mo" onClick={onClose}>
@@ -35,7 +55,7 @@ export default function TaskDetailModal({ task, onClose, onComplete }) {
                             <div className="mc-t" style={{ margin: 0, fontSize: 16 }}>{task.name}</div>
                         </div>
                         <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap" }}>
-                            <span className="badge" style={{ background: `${color}22`, color, fontSize: 10 }}>{task.skill}</span>
+                            <span className="badge" style={{ background: `${color}22`, color, fontSize: 10, textTransform: "capitalize" }}>{badgeLabel}</span>
                             <span className="tm" style={{ fontSize: 11 }}>⏰ {task.time}</span>
                             <span className="xptag">+{task.xp}xp</span>
                         </div>
